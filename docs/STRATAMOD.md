@@ -7,7 +7,7 @@ branch. Small contributions to upstream should start from the current upstream
 
 The integration candidate includes official **v0.2.0-beta**, peeled commit
 `3d1fb48090e8f2cefc22d7b5845fb7f5b71f33fa` (engine **0.1.45.3**).
-It has not been committed or applied to the private normal installation.
+Official v0.2.0-beta is integrated; machine-specific deployment and validation status is recorded separately.
 
 ## Changes kept here
 
