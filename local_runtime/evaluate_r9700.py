@@ -444,13 +444,14 @@ def cleanup_failed_start(process,observer,failed):
         safety.save(failed)
 
 
-def wait_request_release(state,timeout_s=30):
+def wait_request_release(state,timeout_s=30,*,ready_check=None):
     """The disconnected request may still be unwinding; never terminate it busy."""
     if state.get('request_cleanup_pending'):
         raise RuntimeError('API reader cleanup is unconfirmed; preserve candidate pending')
     end = time.monotonic()+timeout_s
     while True:
-        official_runtime.require_tracking(state)
+        if ready_check is None:official_runtime.require_tracking(state)
+        else:ready_check(state)
         safety.require_owned_listener(state)
         status = safety.get_json('/status')
         if type(status.get('busy')) is not bool or type(status.get('queued')) is not int or status['queued'] < 0:
@@ -471,9 +472,10 @@ class FixedRequestCancelled(RuntimeError):
 
 
 def stream_request(state,monitor,content,max_tokens=128,deadline_s=120,*,partial=None,
-                   api='openai',request_body=None,pathname='/v1/chat/completions',cancel_after_answer=False):
+                   api='openai',request_body=None,pathname='/v1/chat/completions',cancel_after_answer=False,
+                   require_answer=True,ready_check=None):
     monitor.check()
-    ready(state)
+    (ready if ready_check is None else ready_check)(state)
     status = safety.get_json('/status')
     if status.get('busy') is not False or status.get('queued') != 0:
         raise RuntimeError('Candidate is busy/queued; no request sent')
@@ -486,9 +488,12 @@ def stream_request(state,monitor,content,max_tokens=128,deadline_s=120,*,partial
     connection = http.client.HTTPConnection('127.0.0.1',18080,timeout=deadline_s)
     output,errors,transports = partial if partial is not None else {},[],[]
     cancelled = threading.Event()
+    expired = threading.Event()
     done = threading.Event()
     answer_seen=threading.Event()
     start = time.monotonic()
+    output.update(transport_started_at=time.time(),transport_started_monotonic=start,
+                  transport_deadline_monotonic=start+deadline_s)
 
     def read():
         try:
@@ -524,9 +529,11 @@ def stream_request(state,monitor,content,max_tokens=128,deadline_s=120,*,partial
                     for choice in chunk.get('choices',[]):
                         delta = choice.get('delta',{})
                         if delta.get('reasoning_content'):
+                            output.setdefault('first_token_seconds',time.monotonic()-start)
                             output.setdefault('first_reasoning_seconds',time.monotonic()-start)
                             output['reasoning'] += delta['reasoning_content']
                         if delta.get('content'):
+                            output.setdefault('first_token_seconds',time.monotonic()-start)
                             output.setdefault('first_answer_seconds',time.monotonic()-start)
                             output['text'] += delta['content']
                             answer_seen.set()
@@ -542,13 +549,26 @@ def stream_request(state,monitor,content,max_tokens=128,deadline_s=120,*,partial
 
     thread = threading.Thread(target=read,daemon=True)
     thread.start()
+    def deadline_cut():
+        if done.is_set():return
+        expired.set()
+        cancelled.set()
+        output.update(timeout_requested_at=time.time(),timeout_requested_monotonic=time.monotonic(),
+                      transport_cut_at=time.time(),transport_cut_monotonic=time.monotonic())
+        transport=transports[0] if transports else connection.sock
+        if transport is not None:
+            try:transport.shutdown(socket.SHUT_RDWR)
+            except OSError:pass
+    watchdog=threading.Timer(max(0,start+deadline_s-time.monotonic()),deadline_cut)
+    watchdog.daemon=True;watchdog.start()
     try:
         while not done.wait(.05):
             monitor.check()
+            if expired.is_set():raise TimeoutError('Fixed request deadline exceeded')
             if cancel_after_answer and answer_seen.is_set():
                 # Cancellation is an actual in-flight disconnect, never an
                 # already-idle request or a response with a terminal observed.
-                ready(state)
+                (ready if ready_check is None else ready_check)(state)
                 active=safety.get_json('/status')
                 output['cancel_trigger']=dict(at=time.time(),monotonic=time.monotonic(),status=active,
                                               owner_verified=True,wire_done_seen=bool(output.get('wire_done_seen')),
@@ -559,7 +579,12 @@ def stream_request(state,monitor,content,max_tokens=128,deadline_s=120,*,partial
                 output['planned_cancel']=True
                 raise FixedRequestCancelled('Fixed cancel case disconnected after actual answer delta')
             if time.monotonic()-start > deadline_s:
+                output.update(timeout_requested_at=time.time(),timeout_requested_monotonic=time.monotonic())
                 raise TimeoutError('Fixed request deadline exceeded')
+        if expired.is_set() or output.get('wall_seconds',0)>=deadline_s:
+            output.setdefault('timeout_requested_at',time.time())
+            output.setdefault('timeout_requested_monotonic',time.monotonic())
+            raise TimeoutError('Fixed request deadline exceeded')
         if errors:
             raise errors[0]
         monitor.check()
@@ -569,11 +594,13 @@ def stream_request(state,monitor,content,max_tokens=128,deadline_s=120,*,partial
             parsed=parse_sse(api,output.get('raw_sse',''))
             output.update(parsed)
             if not parsed['normal_terminal']:raise RuntimeError('Image API did not return a valid terminal: '+str(parsed['errors']))
-        if not output.get('text') or output.get('finish_reason') not in ('stop','length'):
+        if expired.is_set():raise TimeoutError('Fixed request deadline exceeded')
+        if (require_answer and not output.get('text')) or output.get('finish_reason') not in ('stop','length'):
             raise RuntimeError('Candidate did not return a completed answer')
         output['status_after'] = safety.get_json('/v1/status')
         return output
     finally:
+        watchdog.cancel()
         if not done.is_set():
             cancelled.set()
             output['transport_cut_at']=time.time()
@@ -590,6 +617,7 @@ def stream_request(state,monitor,content,max_tokens=128,deadline_s=120,*,partial
                 state['request_cleanup_pending'] = True
                 raise RuntimeError('Cancelled API reader did not stop; cleanup remains unconfirmed')
         output['reader_stopped']=not thread.is_alive()
+        output['transport_terminal_at']=time.time()
 
 
 def screen(state,monitor,value,result):

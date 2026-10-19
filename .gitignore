@@ -110,3 +110,6 @@ node_modules/
 # screenshots and checkpoints from the Mac rebuild live outside git (StrataSplit\evidence-archive)
 /apps/host/docs/evidence/
 /apps/host/docs/checkpoints/
+# Private, receipt-bound runtime bundles and finite trial records.
+/local_runtime/runtimes/
+/local_runtime/release-trials/

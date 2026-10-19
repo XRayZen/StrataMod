@@ -170,7 +170,8 @@ def _allowed_child_config(executable,command,config,cfg):
                                        and executable==pathlib.Path(command[0]).resolve())
     engine=pathlib.Path(cfg['exe']).resolve()
     vision=pathlib.Path(cfg['vision']['exe']).resolve() if cfg.get('vision',{}).get('exe') else None
-    return executable in (engine,vision,CONHOST) or (executable.name.lower()=='python.exe' and server_command(command,config))
+    cpu=pathlib.Path(cfg['vision']['cpu_exe']).resolve() if cfg.get('vision',{}).get('cpu_exe') else None
+    return executable in (engine,vision,cpu,CONHOST) or (executable.name.lower()=='python.exe' and server_command(command,config))
 
 def descendants(process,config,strict=True,unrecognized=None,errors=None):
     return _descendants(process,config,strict,unrecognized,errors)

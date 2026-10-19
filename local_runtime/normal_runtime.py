@@ -88,6 +88,8 @@ def check_metadata(path,expected):
 
 
 def critical_dlls(cfg):
+    if cfg.get('vision',{}).get('reader_mode')=='official-bundle':
+        return {p.resolve() for folder in cfg['lib_dirs'] for p in Path(folder).glob('*.dll')}
     # Accepted actual image loader closure (12 rows), not native's six reports.
     evidence=m.read_json(IMAGE/'one-post-evidence-handoff.json')
     paths={Path(row['path']).resolve() for row in evidence['image_loader_modules']}
@@ -97,6 +99,12 @@ def critical_dlls(cfg):
 
 
 def critical(path,cfg,*,dlls=None):
+    if cfg.get('vision',{}).get('reader_mode')=='official-bundle':
+        from . import release_revision
+        if (Path(path).is_relative_to(release_revision.RUNTIME)
+                or Path(path).is_relative_to(m.VENV_PYTHON.parent.parent)
+                or Path(path).is_relative_to(m.PYTHON.parent)):
+            return True
     return (Path(path) in (Path(cfg['exe']),Path(cfg['vision']['exe']))
             or Path(path).suffix.lower() in ('.py','.json','.txt','.jinja','.cpp','.h','.hpp','.cmake')
             or (Path(path).suffix.lower()=='.dll' and Path(path).resolve() in
@@ -145,6 +153,10 @@ def dependencies(cfg):
 def read_receipt(path):
     value=m.read_json(m.local_path(Path(path)))
     if value.get('kind')!=KIND:raise RuntimeError('Not a normal StrataMod receipt')
+    if 'release_revision' in value:
+        from . import release_revision
+        release_revision.validate(sys.modules[__name__],value)
+        return value
     if value['sources']!=source_files():raise RuntimeError('Installed source changed; explicit reinstall required')
     if m.digest(value['profile'])!=value['profile_sha256']:raise RuntimeError('Installed profile changed')
     references()
@@ -292,7 +304,10 @@ def shim_receipt():
     value=m.read_json(path)
     if value.get('kind')!=KIND or value.get('sources')!=source_files():
         raise RuntimeError('Activated source authority changed')
-    if 'native_revision' in value:
+    if 'release_revision' in value:
+        from . import release_revision
+        release_revision.validate(sys.modules[__name__],value)
+    elif 'native_revision' in value:
         from . import amd_vision_revision
         amd_vision_revision.validate(sys.modules[__name__],value)
     else:check_inheritance(value)
@@ -359,6 +374,9 @@ def authority(state):
         if _authority_io(m.local_path(Path(value[key])),'normal_'+key+'_read',m.digest)!=value[key+'_sha256']:
             raise RuntimeError('Normal immutable '+key+' changed; no request permitted')
     value['snapshot_config']=_authority_io(value['snapshot'],'normal_snapshot_read',m.read_json)
+    if value.get('trial'):
+        trial=value['trial'];m.local_path(Path(trial['manifest']))
+        if m.digest(trial['manifest'])!=trial['sha256']:raise RuntimeError('Trial immutable authority changed')
     if 'births' in state:
         if Path(state['births'])!=path.parent/'births.json' or m.digest(state['births'])!=state['births_sha256']:
             raise RuntimeError('Normal immutable birth/argv authority changed')
@@ -418,6 +436,14 @@ def require_startup_copy(state):
 def expected_child_commands(cfg):
     from serve.server import engine_args
     vision=cfg['vision']
+    if vision.get('reader_mode')=='official-bundle':
+        from serve.server import Vision
+        from strata_control.vision_reader import cpu_fallback
+        cpu=cpu_fallback(vision)
+        if cpu is None:raise RuntimeError('Official bundle requires its CPU fallback')
+        return {str(Path(cfg['exe']).resolve()):[cfg['exe'],'--serve',*engine_args(cfg)],
+                str(Path(vision['exe']).resolve()):Vision.reader_args(vision),
+                str(Path(cpu['exe']).resolve()):Vision.reader_args(cpu)}
     # This installed profile uses the existing engine builder and Vision's fixed
     # non-elastic HIP argv (no min-token or effort-end override).
     encoder=[vision['exe'],'--mmproj',vision['mmproj'],'--model',vision['model'],
@@ -431,27 +457,33 @@ def require_child_command(cfg,executable,command):
     if expected is not None and command!=expected:raise RuntimeError('Normal native/encoder argv differs from immutable snapshot')
 
 
-def new_run(pointer,value):
+def new_run(pointer,value,*,trial=None):
     directory=RUNS/str(time.time_ns());directory.mkdir(parents=True)
     cfg=copy.deepcopy(m.read_json(value['profile']));cfg['log']=str(directory/'engine.log')
     cfg['vision']['temp_dir']=str(directory/'tmp')
+    if trial is not None:
+        from . import release_trial
+        cfg=release_trial.config(sys.modules[__name__],trial,pointer,value,cfg)
     snapshot=directory/'startup.json';mutable=directory/'strata-StrataMod.json'
     write(snapshot,cfg);write(mutable,cfg)
     command=[str(m.PYTHON),str(m.ROOT/'serve/server.py'),'--engine','strata','--config',str(mutable),'--port','18080']
     fixed=dict(kind=KIND,receipt=pointer['receipt'],receipt_sha256=pointer['sha256'],snapshot=str(snapshot),
                snapshot_sha256=m.digest(snapshot),config=str(mutable),command=command,
                environment=m.normalized_environment(cfg,os.environ))
+    if trial is not None:fixed['trial']=copy.deepcopy(trial)
     path=directory/'authority.json';write(path,fixed)
     state=dict(kind=KIND,authority=str(path),authority_sha256=m.digest(path),config=str(mutable),
                model=m.MODEL,context=m.CONTEXT,phase='spawning',cleanup_pending=True,owned_identities=[],
                runtime_provider='official_mcp',engine_log=cfg['log'],verification_mode=value['verification_mode'],
                normal_launch_full_asset_sha=False)
+    if trial is not None:state['trial']=copy.deepcopy(trial)
     (directory/'claim').write_text(str(time.time()),encoding='utf-8')
     return directory,state,cfg
 
 
-def start(pointer,value,monitor,retained):
-    directory,state,cfg=new_run(pointer,value);retained['state']=state
+def start(pointer,value,monitor,retained,*,trial=None):
+    directory,state,cfg=new_run(pointer,value) if trial is None else new_run(pointer,value,trial=trial)
+    retained['state']=state
     strata,tools=manager(state)
     def launch(command,cwd,logfile,environment):
         fixed=authority(state)
@@ -487,13 +519,22 @@ def start(pointer,value,monitor,retained):
                 if observation['unknown'] or observation['errors']:raise RuntimeError('Normal final cohort observation incomplete')
                 for row in state['owned_identities']:
                     member=safety.require_identity(safety.process_identity_status(row))
-                    if member is None:raise RuntimeError('Normal member exited before READY')
+                    if member is None:
+                        if (cfg['vision'].get('reader_mode')=='official-bundle'
+                                and Path(row['exe'])==Path(cfg['vision']['exe'])
+                                and checked_job.original_birth_exit(row)['original_gone']):
+                            continue
+                        raise RuntimeError('Normal member exited before READY')
                     command=member.cmdline();require_child_command(cfg,row['exe'],command)
                     if not checked_job.membership_pid(member.pid):raise RuntimeError('Normal READY member Job changed')
                     row['argv']=command
                 births=directory/'births.json';write(births,state['owned_identities'])
                 state.update(births=str(births),births_sha256=m.digest(births))
                 safety.save(state)
+                if cfg['vision'].get('reader_mode')=='official-bundle':
+                    from . import release_revision
+                    release_revision.ready(sys.modules[__name__],state,cfg,value,monitor,observation)
+                    safety.save(state);return directory,state
                 image.require_image_ready(state,{},monitor,initialize=True)
                 deps={name:row['sha256'] for name,row in value['assets'].items()}
                 native=next(row for row in observation['identities'] if Path(row['exe'])==Path(cfg['exe']))
@@ -551,7 +592,7 @@ def positive_failed_cleanup_proof(retained):
         return dict(complete=False,current_inspection_error=official.observation_error(error,'normal_cleanup_reproof'))
 
 
-def serve():
+def serve(*,trial=None):
     pointer,value=selected();validate_assets(value)
     retained={};result=dict(kind=KIND,status='starting',generation_requests=0,
                            stop_request='POST /unload after idle; separate from generation requests')
@@ -559,10 +600,12 @@ def serve():
     with runner.shared_operation(),runner.candidate_interrupts(retained):
         try:
             runner.production_inactive();pointer,value=selected();validate_assets(value,hash_small=False)
-            with NormalMonitor(HOME/f'memory-{time.time_ns()}.jsonl') as monitor:
+            monitor_class=NormalMonitor if trial is None else runner.MemoryMonitor
+            with monitor_class(HOME/f'memory-{time.time_ns()}.jsonl') as monitor:
                 monitor.cancel_requested=lambda:retained.get('cancel_requested',False)
                 try:
-                    directory,state=start(pointer,value,monitor,retained)
+                    directory,state=(start(pointer,value,monitor,retained) if trial is None
+                                     else start(pointer,value,monitor,retained,trial=trial))
                     startup_complete=True
                     result.update(status='ready',state=copy.deepcopy(state))
                     print('StrataMod READY http://127.0.0.1:18080/ — stop with Ctrl+C in this terminal',flush=True)
@@ -642,8 +685,12 @@ def status():
 
 
 def main():
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',nargs='?',default='serve',choices=('serve','status','verify','prepare-install','revise-install','install','install-shim','install-guard','stop'))
-    parser.add_argument('--receipt');parser.add_argument('--sha256');parser.add_argument('--check',action='store_true');args=parser.parse_args()
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',nargs='?',default='serve',choices=('serve','trial','status','verify','prepare-install','revise-install','install','install-shim','install-guard','stop'))
+    parser.add_argument('--receipt');parser.add_argument('--sha256');parser.add_argument('--check',action='store_true')
+    parser.add_argument('--manifest');parser.add_argument('--index',type=int);args=parser.parse_args()
+    if args.action=='trial':
+        if not args.manifest or not args.sha256 or args.index is None:parser.error('trial requires exact manifest, SHA256 and fixed start index')
+        serve(trial=dict(manifest=args.manifest,sha256=args.sha256,index=args.index));return
     if args.action=='serve':serve();return
     if args.action=='status':value=status()
     elif args.action=='verify':value=verify()

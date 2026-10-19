@@ -2604,7 +2604,9 @@ class Vision:
         return Path(tempfile.mkdtemp(prefix="strata-vision-"))
 
     def __init__(self, cfg: dict, log=None, env: dict | None = None, lazy: bool = False):
-        self.hip_required = cfg.get("backend") == "hip"
+        self.official_reader = cfg.get("reader_mode") == "official-bundle"
+        self.reader_backend = ("hip" if cfg.get("gpu") else "cpu") if self.official_reader else None
+        self.hip_required = cfg.get("backend") == "hip" and not self.official_reader
         self.error = None
         self.cleanup_pending = False
         self.encode_timeout = 60.0
@@ -2615,7 +2617,7 @@ class Vision:
             if cfg.get("gpu") is not True:
                 raise ValueError('vision.backend="hip" requires vision.gpu=true')
             args.insert(args.index("--gpu") + 1, "--require-hip")
-        if self.hip_required:
+        if self.hip_required or self.official_reader:
             parent = Path(cfg.get("temp_dir") or (env or {}).get("TEMP") or ROOT / "tmp" / "vision-hip")
             self.dir = self.work_dir(parent)
             env = dict(env or os.environ)
@@ -2676,6 +2678,8 @@ class Vision:
             print(f"[strata] the GPU picture reader did not start ({why}); pictures are read on the CPU", flush=True)
             self._hip_stop(force=True)  # exit proof precedes the CPU spawn
             self.hip_required = False
+            if getattr(self, "official_reader", False):
+                self.reader_backend = "cpu"
             self.spawn, self.fallback = fallback, None
             self._start_reader()
 
@@ -2965,6 +2969,7 @@ class Vision:
 
 def vision_capability(vision) -> dict:
     if (getattr(vision, "hip_required", False) is True
+            or getattr(vision, "official_reader", False) is True
             or getattr(vision, "cleanup_pending", False)):
         return vision.capability()
     enabled = vision is not None
@@ -3372,6 +3377,10 @@ def vision_env(cfg: dict, env: dict) -> dict:
     """The image encoder's environment: the engine's, unless the config's vision section names its own "cuda_device"
     (numbered like nvidia-smi) - then the encoder runs on that card alone, so a spare GPU can hold it while the engine
     keeps all of its own cards' VRAM (#408, Efs-O).  Without it, nothing changes."""
+    if (cfg.get("vision") or {}).get("reader_mode") == "official-bundle":
+        # The official reader shares this bundle's runtime and the text engine's
+        # physical HIP mask; trial performance flags belong to text only.
+        return {k: v for k, v in env.items() if not k.upper().startswith("STRATA_")}
     if (cfg.get("vision") or {}).get("backend") == "hip":
         from serve.stratamod.amd_vision.environment import windows_hip_env
         return windows_hip_env(cfg["vision"], env)
