@@ -31,6 +31,17 @@ def normal_authorities(case):
     old_sources=dict(sources)
     for name in paths:old_sources[str(normal.m.ROOT/name)]='0'*64
     old_sources.pop(str(normal.m.ROOT/'serve/vision_request.py'),None)
+    old_sources[str(normal.m.ROOT/'serve/vision_hip.py')]='0'*64
+    old_sources[str(normal.m.ROOT/'tools/vision/hip_windows.py')]='0'*64
+    old_sources.pop(str(normal.m.ROOT/'serve/test_amd_vision_modules.py'),None)
+    old_sources.pop(str(normal.m.ROOT/'serve/stratamod/__init__.py'),None)
+    old_sources.pop(str(normal.m.ROOT/'serve/stratamod/amd_vision/__init__.py'),None)
+    old_sources.pop(str(normal.m.ROOT/'serve/stratamod/amd_vision/environment.py'),None)
+    old_sources.pop(str(normal.m.ROOT/'serve/stratamod/amd_vision/encoder.py'),None)
+    old_sources.pop(str(normal.m.ROOT/'serve/stratamod/amd_vision/request.py'),None)
+    old_sources.pop(str(normal.m.ROOT/'tools/vision/amd_vision/__init__.py'),None)
+    old_sources.pop(str(normal.m.ROOT/'tools/vision/amd_vision/cli.py'),None)
+
     value=dict(kind=normal.KIND,profile=str(original),profile_sha256=normal.m.digest(original),
                sources=old_sources,assets=assets,references={},full_content_verification_at=123.0)
     full=root/'full/receipt.json';normal.write(full,value)

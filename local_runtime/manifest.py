@@ -180,6 +180,9 @@ def source_files():
              *sorted(LOCAL.glob('*.py'))]
     files.extend(ROOT/name for name in ('tools/vision/hip_windows.py','tools/gguf_reader.py','tools/vision/encode_io.py',
         'tools/vision/image_api_cases.py','tools/vision/webui_upload.mjs','serve/web/index.html','serve/web/app.js'))
+    # Explicit extension roots only: never recurse into private records/data.
+    for relative in ('serve/stratamod', 'serve/stratamod/amd_vision', 'tools/vision/amd_vision'):
+        files.extend(sorted((ROOT/relative).glob('*.py')))
     return {str(path):digest(path) for path in files}
 
 

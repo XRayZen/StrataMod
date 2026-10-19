@@ -67,7 +67,7 @@ endif()
 
 add_subdirectory(${LLAMA_DIR} llama EXCLUDE_FROM_ALL)
 
-add_executable(strata-vision strata_vision.cpp)
+add_executable(strata-vision strata_vision.cpp amd_vision/diagnostics.cpp)
 target_link_libraries(strata-vision PRIVATE mtmd llama)
 if(STRATA_VISION_HIP)
   target_compile_definitions(strata-vision PRIVATE STRATA_VISION_HIP=1)

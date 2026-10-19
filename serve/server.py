@@ -68,7 +68,9 @@ from serve.structured import StructuredOutputError, prepare_format, validated_js
 from serve import responses as responses_api  # noqa: E402
 from serve.responses import ResponsesError, error_body as responses_error_body  # noqa: E402
 from serve import images as images_api  # noqa: E402
-from serve.vision_request import HipImageRequest as _HipImageRequest, ImageRequestFatal  # noqa: E402
+from serve.stratamod.amd_vision.request import HipImageRequest as _HipImageRequest, ImageRequestFatal  # noqa: E402
+
+from serve.stratamod.amd_vision import encoder as amd_encoder
 
 IM_END = "<|im_end|>"
 IMAGE_PAD = "<|image_pad|>"
@@ -2396,15 +2398,7 @@ class Vision:
         self.cleanup_pending = False
         self.encode_timeout = 60.0
         self.encode_peak_s = 0.0
-        if self.hip_required:
-            cap = cfg.get("max_tokens", 300)
-            if isinstance(cap, bool) or not isinstance(cap, int) or not 1 <= cap <= 1024:
-                raise ValueError("HIP vision max_tokens must be an integer between 1 and 1024; start with 300")
-            self.max_tokens = cap
-        else:
-            self.max_tokens = int(cfg.get("max_tokens") or 0)
-        if self.hip_required and cfg.get("min_tokens") and int(cfg["min_tokens"]) > self.max_tokens:
-            raise ValueError("HIP vision min_tokens exceeds max_tokens")
+        self.max_tokens = amd_encoder.max_tokens(cfg, self.hip_required)
         absolute = lambda p: os.path.abspath(p) if os.path.dirname(str(p)) else p   # the encoder runs in its own dir (#480)  # noqa: E731
         args = [absolute(cfg["exe"]), "--mmproj", absolute(cfg["mmproj"]), "--model", absolute(cfg["model"])]
         if cfg.get("gpu"):
@@ -2488,38 +2482,10 @@ class Vision:
                 raise RuntimeError("the HIP vision encoder returned an invalid READY width") from None
 
     def capability(self) -> dict:
-        available = self.alive()
-        return {"enabled": True, "available": available, "backend": "hip" if self.hip_required else "legacy",
-                "error": None if available else self.error or "the image encoder is not running",
-                "cleanup_pending": self.cleanup_pending}
+        return amd_encoder.capability(self)
 
     def _hip_stop(self, force=False):
-        """Retain this Popen (and its process handle) until poll/wait proves exit."""
-        proc = self.proc
-        kill_error = None
-        try:
-            if proc is not None and proc.poll() is None:
-                if not force:
-                    try:
-                        proc.stdin.write("QUIT\n")
-                        proc.stdin.flush()
-                        proc.wait(timeout=10)
-                    except (OSError, ValueError, subprocess.TimeoutExpired):
-                        force = True
-                if force:
-                    try:
-                        proc.kill()
-                    except OSError as exc:
-                        kill_error = exc
-                    proc.wait(timeout=5)
-        except (OSError, ValueError, subprocess.TimeoutExpired) as exc:
-            self.stopped, self.cleanup_pending = True, True
-            self.error = f"HIP vision cleanup pending (pid={getattr(proc, 'pid', None)}): {exc}"
-            if kill_error is not None:
-                self.error += f"; kill failed: {kill_error}"
-            raise VisionCleanupPending(self) from exc
-        self.proc = None
-        self.stopped, self.cleanup_pending, self.error = True, False, None
+        return amd_encoder.stop(self, force, cleanup_pending_error=VisionCleanupPending)
 
     def _readline(self, timeout: float, what: str, cancel=None) -> str:
         """One line from the encoder, waiting at most `timeout` s (#1317).  On a timeout the encoder is killed, so the
@@ -2693,22 +2659,7 @@ class Vision:
         return out
 
     def checked_image(self, data: bytes) -> bytes:
-        """Validate compressed input and dimensions before any decoder allocates pixels."""
-        if len(data) > 20 << 20:
-            raise ValueError("the image source is larger than 20 MiB")
-        try:
-            import io
-            from PIL import Image
-            with Image.open(io.BytesIO(data)) as im:
-                w, h = im.size
-                if im.format not in ("JPEG", "PNG", "WEBP"):
-                    raise ValueError("HIP vision accepts JPEG, PNG and WebP")
-                if min(w, h) <= 0 or max(w, h) > 4096 or w * h > 4_000_000:
-                    raise ValueError("HIP vision requires edges <=4096 and at most 4000000 pixels")
-                im.verify()
-        except Exception as e:
-            raise ValueError(f"the image could not be read ({e})") from None
-        return self.normalize(data)
+        return amd_encoder.checked_image(self, data)
 
     def encode(self, source: str | bytes, keep=(), cancel=None, *, request=None, occurrence=None) -> tuple[Path, int]:
         """-> (embeddings file, number of image tokens).  `source`: what load() reads, or the image's bytes.
@@ -2959,7 +2910,7 @@ def engine_args(cfg: dict) -> list[str]:
     args += parallel_args(cfg, args)
     args = learned_profile_args(cfg, args)
     if sys.platform == "win32" and (cfg.get("vision") or {}).get("backend") == "hip":
-        from serve.vision_hip import reserve_args
+        from serve.stratamod.amd_vision.environment import reserve_args
         args = reserve_args(args)
     return args
 
@@ -3212,7 +3163,7 @@ def vision_env(cfg: dict, env: dict) -> dict:
     (numbered like nvidia-smi) - then the encoder runs on that card alone, so a spare GPU can hold it while the engine
     keeps all of its own cards' VRAM (#408, Efs-O).  Without it, nothing changes."""
     if (cfg.get("vision") or {}).get("backend") == "hip":
-        from serve.vision_hip import windows_hip_env
+        from serve.stratamod.amd_vision.environment import windows_hip_env
         return windows_hip_env(cfg["vision"], env)
     dev = (cfg.get("vision") or {}).get("cuda_device")
     if dev is None:

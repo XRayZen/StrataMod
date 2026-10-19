@@ -69,10 +69,10 @@ class NativeDiagnostics(unittest.TestCase):
     def setUpClass(cls):
         if os.name != 'nt' or not COMPILER.is_file():
             raise RuntimeError('This required Windows CPU harness needs the pinned private MSVC')
-        cls.folder = tempfile.TemporaryDirectory(dir=ROOT / '.vision-tmp', prefix='native-diagnostic-mock-')
+        cls.folder = tempfile.TemporaryDirectory(prefix='native-diagnostic-mock-')
         directory = Path(cls.folder.name)
-        source = (ROOT / 'tools/vision/strata_vision.cpp').read_text(encoding='utf-8')
-        function = source[source.index('bool hip_diagnostics() {'):source.index('\nstruct graph_proof')]
+        source = (ROOT / 'tools/vision/amd_vision/diagnostics.cpp').read_text(encoding='utf-8')
+        function = source[source.index('bool hip_diagnostics() {'):source.index('// The scheduler')]
         harness = directory / 'test.cpp'
         harness.write_text(PRELUDE + '\n' + function + r'''
 int main(int argc,char** argv){

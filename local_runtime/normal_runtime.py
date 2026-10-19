@@ -8,6 +8,7 @@ from pathlib import Path
 import shutil
 import stat
 import subprocess
+import sys
 import time
 import psutil
 
@@ -129,6 +130,7 @@ def profile(directory):
     cfg.pop('phase',None)
     cfg.update(log=str(Path(directory)/'engine.log'),shared=False,open_browser=False)
     cfg['vision']['temp_dir']=str(Path(directory)/'tmp')
+    if cfg['vision'].get('backend')=='hip':cfg['vision']['exe']=str(image.HIP_EXE)
     return cfg
 
 
@@ -149,7 +151,10 @@ def read_receipt(path):
     cfg=m.read_json(value['profile'])
     if cfg!=profile(Path(value['profile']).parent):raise RuntimeError('Installed image/calibration profile changed')
     if set(value['assets'])!={str(p) for p in dependencies(cfg)}:raise RuntimeError('Installed asset inventory changed')
-    if 'full_verification_origin' in value:check_inheritance(value)
+    if 'native_revision' in value:
+        from . import amd_vision_revision
+        amd_vision_revision.validate(sys.modules[__name__],value)
+    elif 'full_verification_origin' in value:check_inheritance(value)
     return value
 
 
@@ -200,7 +205,17 @@ def check_inheritance(value):
                  str(m.ROOT/'local_runtime/checked_job.py'),str(m.ROOT/'local_runtime/manifest.py'),
                  str(m.ROOT/'local_runtime/image_phase.py'),str(m.ROOT/'local_runtime/webui_phase.py'),
                  str(m.ROOT/'tools/vision/webui_upload.mjs'),str(m.ROOT/'StrataMod.cmd'),
-                 str(m.ROOT/'serve/vision_request.py')}:
+                 str(m.ROOT/'serve/vision_request.py'),
+                 str(m.ROOT/'serve/vision_hip.py'),
+                 str(m.ROOT/'tools/vision/hip_windows.py'),
+                 str(m.ROOT/'serve/test_amd_vision_modules.py'),
+                 str(m.ROOT/'serve/stratamod/__init__.py'),
+                 str(m.ROOT/'serve/stratamod/amd_vision/__init__.py'),
+                 str(m.ROOT/'serve/stratamod/amd_vision/environment.py'),
+                 str(m.ROOT/'serve/stratamod/amd_vision/encoder.py'),
+                 str(m.ROOT/'serve/stratamod/amd_vision/request.py'),
+                 str(m.ROOT/'tools/vision/amd_vision/__init__.py'),
+                 str(m.ROOT/'tools/vision/amd_vision/cli.py')}:
         raise RuntimeError('Source-only revision contains an unapproved source delta')
 
 
@@ -277,7 +292,10 @@ def shim_receipt():
     value=m.read_json(path)
     if value.get('kind')!=KIND or value.get('sources')!=source_files():
         raise RuntimeError('Activated source authority changed')
-    check_inheritance(value)
+    if 'native_revision' in value:
+        from . import amd_vision_revision
+        amd_vision_revision.validate(sys.modules[__name__],value)
+    else:check_inheritance(value)
     if m.digest(value['profile'])!=value['profile_sha256']:raise RuntimeError('Activated profile changed')
     for name,row in value['assets'].items():check_metadata(name,row['metadata'])
     return pointer,value

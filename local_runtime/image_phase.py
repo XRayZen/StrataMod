@@ -11,11 +11,13 @@ import sys
 import time
 
 from . import manifest
-from serve.vision_hip import windows_hip_env,reserve_args
+from serve.stratamod.amd_vision.environment import windows_hip_env,reserve_args
 
 SDK=manifest.ROOT/'.vision-venv-10.1/Lib/site-packages/_rocm_sdk_devel'
-HIP_EXE=SDK/'bin/strata-vision-hip-v2-3707a62c9bea.exe'
-CPU_EXE=manifest.ROOT/'.vision-build/cpu-reference-2/bin/strata-vision-v2-4406416bd3d7.exe'
+LEGACY_HIP_EXE=SDK/'bin/strata-vision-hip-v2-3707a62c9bea.exe'
+HIP_EXE=manifest.ROOT/'.vision-venv-10.1/Lib/site-packages/_rocm_sdk_devel/bin/strata-vision-hip-m3-b2c8ee3ac9df.exe'
+LEGACY_CPU_EXE=manifest.ROOT/'.vision-build/cpu-reference-2/bin/strata-vision-v2-4406416bd3d7.exe'
+CPU_EXE=manifest.ROOT/'.vision-build/amd-vision-m3-c55e049b8c07/cpu/strata-vision-m3-e5be8b263e3b.exe'
 REPAIR=manifest.ROOT/'.vision-tmp/vision-probe-repair-v2-receipt.json'
 REPAIR_SHA='321d9a87ece6e9fec7f445ec0a54a04fd5b8995ab5bd3c88aa1f7c3b3d09ee9e'
 MM_PROJ=manifest.DATA/'vision-sidecars/ista/mmproj-Qwen3.8-Flash-Next-BF16.gguf'
@@ -23,8 +25,10 @@ FIXTURES=manifest.ROOT.parent/'RefImage'
 INPUT_INVENTORY=manifest.ROOT/'.vision-tmp/records/refimage-transition-20261018-v1/refimage-inventory.json'
 INPUT_INVENTORY_SHA='e9e3e5e993d83978895506218e2224e17d5ddb1fcb10606c8a8c0ea6af7327d4'
 MM_PROJ_SHA='b1a82259702816a5330d7bd7607cd9676b11780e79ff7348c21103ff3ce49bd0'
-HIP_SHA='3707a62c9bea3175de8de5211b6615b7eeeceae93cffc633f5fb8def1a7bc988'
-CPU_SHA='4406416bd3d7cfbdb1c38b8ab80736cbd32ec229bb13eb2960b40dd741631945'
+LEGACY_HIP_SHA='3707a62c9bea3175de8de5211b6615b7eeeceae93cffc633f5fb8def1a7bc988'
+HIP_SHA='b2c8ee3ac9df0f65aa5ee17dea9e636f1cbbaa5eb4e6052c58084ae20282b0c4'
+LEGACY_CPU_SHA='4406416bd3d7cfbdb1c38b8ab80736cbd32ec229bb13eb2960b40dd741631945'
+CPU_SHA='e5be8b263e3bfacf7b34997d3505d6bc1a37c77d2a08432d8a18870f3456152f'
 NODE=Path.home()/'.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe'
 EDGE=Path('C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe')
 PLAYWRIGHT=NODE.parent.parent/'node_modules/playwright'
@@ -176,7 +180,7 @@ def smoke_protocol():
                 meaning='A default-workers/spec4/async-off plus image; performance C=B+image remains pending')
 
 
-def native_repair_pins():
+def legacy_native_repair_pins():
     """One pinned repair receipt, bounded to the four approved backend builds."""
     if manifest.digest(REPAIR)!=REPAIR_SHA:raise RuntimeError('Pinned native diagnostic repair receipt changed')
     repair=manifest.read_json(REPAIR)
@@ -196,7 +200,7 @@ def native_repair_pins():
     for role in repair['roles'].values():
         if pins.get(manifest.ROOT/role['path'])!=role['sha256']:
             raise RuntimeError('Native repair executable role differs from its fixed inventory')
-    if pins.get(HIP_EXE)!=HIP_SHA or pins.get(CPU_EXE)!=CPU_SHA:
+    if pins.get(LEGACY_HIP_EXE)!=LEGACY_HIP_SHA or pins.get(LEGACY_CPU_EXE)!=LEGACY_CPU_SHA:
         raise RuntimeError('Native repair HIP/CPU selected executable changed')
     # Bind compilation inputs, not mutable work-journal snapshots recorded as
     # historical provenance in the receipt. No recursive receipt/catalog walk.
@@ -544,3 +548,54 @@ def run_smoke(path,approved):
     finally:
         (directory/'result.json').write_text(json.dumps(result,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
     return result
+
+
+
+M3_BUILD=manifest.ROOT/'.vision-tmp/amd-vision-m3-build.json'
+M3_BUILD_SHA='77fe5b3ac638b04a0baff77ca2e227dfc5a6fff5c799835326a1ff47e85940a0'
+
+
+def m3_native_manifest():
+    """One immutable build closure; it cannot authorize arbitrary asset changes."""
+    manifest.local_path(M3_BUILD)
+    if manifest.digest(M3_BUILD)!=M3_BUILD_SHA:raise RuntimeError('Pinned amdVision build evidence changed')
+    value=manifest.read_json(M3_BUILD)
+    inputs={str(manifest.ROOT/name) for name in ('tools/vision/strata_vision.cpp','tools/vision/CMakeLists.txt',
+                'tools/vision/amd_vision/diagnostics.h','tools/vision/amd_vision/diagnostics.cpp')}
+    changes={str(manifest.ROOT/name) for name in ('tools/vision/strata_vision.cpp','tools/vision/CMakeLists.txt')}
+    if (value.get('version')!=3 or value.get('kind')!='amd-vision-m3-native-build'
+            or value.get('llama_commit')!='3cf03257f219afbe7334045ff7c6a06ac68c627d'
+            or set(value['source_files'])!=inputs or set(value['changed_assets'])!=changes
+            or set(value['roles'])!={'cpu','hip','cuda','sycl','hip_staged'}
+            or set(value['builds'])!={'cpu','hip','cuda','sycl'}
+            or value['sdk_root']!=str(SDK)
+            or value['roles']['hip_staged']!=dict(path=str(HIP_EXE),sha256=HIP_SHA)
+            or value['roles']['cpu']!=dict(path=str(CPU_EXE),sha256=CPU_SHA)):
+        raise RuntimeError('amdVision build role/input/SDK inventory changed')
+    for name,row in value['changed_assets'].items():
+        if row['after']['sha256']!=value['source_files'][name]:raise RuntimeError('amdVision compile input differs')
+    for name,sha in value['source_files'].items():
+        row=value['changed_assets'][name]['after'] if name in value['changed_assets'] else value['added_assets'].get(name,{})
+        if row.get('sha256')!=sha:raise RuntimeError('amdVision input is not bound in the artifact closure')
+    for role in value['roles'].values():
+        if value['added_assets'].get(role['path'],{}).get('sha256')!=role['sha256']:
+            raise RuntimeError('amdVision native role not bound in closure')
+    for backend in value['builds'].values():
+        if [x['kind'] for x in backend['actions']]!=['configure','compile','compile','link'] or any(x['exit_code']!=0 for x in backend['actions']):
+            raise RuntimeError('All amdVision backend build actions must pass')
+    for name in value['added_assets']:manifest.local_path(Path(name))
+    return value
+
+
+def native_repair_pins():
+    pins=legacy_native_repair_pins();value=m3_native_manifest()
+    for name,row in value['changed_assets'].items():
+        path=manifest.local_path(Path(name))
+        if pins.get(path)!=row['before']['sha256']:raise RuntimeError('Legacy native compilation parent changed')
+        pins[path]=row['after']['sha256']
+    for name,row in value['added_assets'].items():
+        path=manifest.local_path(Path(name))
+        if path in pins and pins[path]!=row['sha256']:raise RuntimeError('Native closure hash conflict')
+        pins[path]=row['sha256']
+    pins[M3_BUILD]=M3_BUILD_SHA
+    return pins

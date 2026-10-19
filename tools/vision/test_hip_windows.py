@@ -67,6 +67,7 @@ class RuntimeEnvironment(unittest.TestCase):
     def test_new_backend_passes_strict_flag_only_when_requested(self):
         base = {"exe": "image.exe", "model": "text.gguf", "mmproj": "image.gguf", "gpu": True}
         with tempfile.TemporaryDirectory() as d, mock.patch.object(server.Vision, "work_dir", return_value=Path(d)):
+            base['temp_dir'] = d  # The fake work_dir does not create its normal parent.
             old = server.Vision(base, lazy=True)
             new = server.Vision({**base, "backend": "hip"}, lazy=True)
             self.assertNotIn("--require-hip", old.spawn[0])
