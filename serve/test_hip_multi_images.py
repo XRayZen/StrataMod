@@ -3,8 +3,11 @@ import contextlib
 import copy
 import hashlib
 import io
+import importlib
 from pathlib import Path
 import struct
+import subprocess
+import sys
 import tempfile
 import threading
 from types import SimpleNamespace
@@ -193,6 +196,42 @@ class HipMulti(unittest.TestCase):
         self.service.resolve_prefix=original
         self.service.drop_embeddings()
         self.assertFalse(list(self.vision.dir.glob('req-*.sve')))
+
+
+class VisionRequestContracts(unittest.TestCase):
+    def request(self, cancel=None):
+        vision = SimpleNamespace()
+        with contextlib.redirect_stdout(io.StringIO()):
+            return s.HipImageRequest([], cancel, vision)
+
+    def test_three_argument_server_adapter_uses_existing_loader(self):
+        module = importlib.import_module('serve.vision_request')
+        with patch.object(s.Vision, 'load', return_value=b'opaque-source') as load:
+            request = self.request()
+            self.assertIsInstance(request, module.HipImageRequest)
+            self.assertEqual(request.load('synthetic-source'), b'opaque-source')
+            load.assert_called_once_with('synthetic-source', 20 << 20)
+        self.assertIs(s.ImageRequestFatal, module.ImageRequestFatal)
+
+    def test_cancel_preserves_exact_server_exception_and_skips_read(self):
+        importlib.import_module('serve.vision_request')
+        cancel = threading.Event()
+        request = self.request(cancel)
+        cancel.set()
+        with patch.object(s.Vision, 'load') as load:
+            with self.assertRaises(s.ClientGone) as caught:
+                request.load('never-read')
+            self.assertIs(type(caught.exception), s.ClientGone)
+            load.assert_not_called()
+
+    def test_new_module_import_has_no_server_dependency(self):
+        code = ("import sys; from serve import vision_request; "
+                "assert 'serve.server' not in sys.modules; "
+                "assert issubclass(vision_request.ImageRequestFatal, ValueError)")
+        result = subprocess.run([sys.executable, '-B', '-X', 'utf8', '-c', code],
+                                cwd=Path(__file__).resolve().parents[1], capture_output=True,
+                                text=True, encoding='utf-8', timeout=10)
+        self.assertEqual(result.returncode, 0, result.stderr)
 
 
 if __name__=='__main__':unittest.main(verbosity=2)

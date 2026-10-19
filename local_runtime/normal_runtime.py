@@ -199,7 +199,8 @@ def check_inheritance(value):
                  str(m.ROOT/'serve/test_hip_multi_images.py'),str(m.ROOT/'local_runtime/official_runtime.py'),
                  str(m.ROOT/'local_runtime/checked_job.py'),str(m.ROOT/'local_runtime/manifest.py'),
                  str(m.ROOT/'local_runtime/image_phase.py'),str(m.ROOT/'local_runtime/webui_phase.py'),
-                 str(m.ROOT/'tools/vision/webui_upload.mjs'),str(m.ROOT/'StrataMod.cmd')}:
+                 str(m.ROOT/'tools/vision/webui_upload.mjs'),str(m.ROOT/'StrataMod.cmd'),
+                 str(m.ROOT/'serve/vision_request.py')}:
         raise RuntimeError('Source-only revision contains an unapproved source delta')
 
 

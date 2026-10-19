@@ -30,6 +30,7 @@ def normal_authorities(case):
            'local_runtime/image_phase.py','local_runtime/webui_phase.py','tools/vision/webui_upload.mjs','StrataMod.cmd')
     old_sources=dict(sources)
     for name in paths:old_sources[str(normal.m.ROOT/name)]='0'*64
+    old_sources.pop(str(normal.m.ROOT/'serve/vision_request.py'),None)
     value=dict(kind=normal.KIND,profile=str(original),profile_sha256=normal.m.digest(original),
                sources=old_sources,assets=assets,references={},full_content_verification_at=123.0)
     full=root/'full/receipt.json';normal.write(full,value)
@@ -190,6 +191,18 @@ class NormalEntryTests(unittest.TestCase):
                  patch.object(normal.m,'read_json',return_value=dict(kind=normal.KIND,sources=sources)), \
                  patch.object(official.native(),'spawn_detached') as spawn:
                 with self.assertRaisesRegex(RuntimeError,'source changed'):normal.read_receipt('receipt')
+                spawn.assert_not_called()
+
+    def test_source_inventory_binds_extracted_request_and_rejects_its_changed_hash(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            value,receipt,_=self.inherited_fixture(Path(tmp))
+            source=str(normal.m.ROOT/'serve/vision_request.py')
+            self.assertEqual(value['sources'][source],normal.m.digest(source))
+            normal.read_receipt(receipt)
+            normal.write(receipt,dict(value,sources=dict(value['sources'],**{source:'f'*64})))
+            with patch.object(official.native(),'spawn_detached') as spawn:
+                with self.assertRaisesRegex(RuntimeError,'source changed'):
+                    normal.read_receipt(receipt)
                 spawn.assert_not_called()
 
     def test_initial_mutable_copy_changes_are_refused_before_popen(self):
