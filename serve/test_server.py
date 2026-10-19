@@ -4709,7 +4709,8 @@ class AmdTelemetry(unittest.TestCase):
                 hops.append(str(h))
             (Path(hops[-1]) / "current_link_speed").write_text("16.0 GT/s PCIe\n")
             (Path(hops[-1]) / "current_link_width").write_text("16\n")
-            a = telemetry.gpu_reader(0, amd=True)
+            with mock.patch.object(telemetry.os, "name", "posix"):      # this test is the sysfs reader's link()
+                a = telemetry.gpu_reader(0, amd=True)
             a.dev = hops[-1]
             with mock.patch.object(telemetry._Amd, "_hops", lambda self: hops):
                 self.assertEqual(a.link(), {"pcie_gen": 3, "pcie_gen_max": 3, "pcie_own_gen": 4, "pcie_width": 8,
@@ -4747,7 +4748,7 @@ class AmdTelemetry(unittest.TestCase):
                 self.assertEqual((s["gpu_mem_used"], s["gpu_util"], s["gpu_temp"], s["gpu_power"]),
                                  (8 << 30, 68.0, 64.0, 205.0))
         with tempfile.TemporaryDirectory() as d:                    # no amdgpu: nothing, and nothing breaks
-            with mock.patch.object(telemetry, "SYSFS", d):
+            with mock.patch.object(telemetry, "SYSFS", d), mock.patch.object(telemetry.os, "name", "posix"):
                 self.assertFalse(telemetry.gpu_reader(0, amd=True).ok())
                 self.assertIsNone(telemetry.free_vram_mib(0, amd=True))
 
