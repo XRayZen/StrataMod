@@ -237,7 +237,7 @@ def wait_gone(pid, ident, seconds: float) -> bool:
     return not proc_alive(pid, ident)
 
 
-def spawn_detached(cmd: list, cwd: Path, log_path: Path, env: dict | None = None) -> subprocess.Popen:
+def spawn_detached(cmd: list, cwd: Path, log_path: Path, env: dict | None = None, *, allow_breakaway=True) -> subprocess.Popen:
     """Start a background process whose output goes to log_path.  It keeps running when the AI client (and this
     server) ends: its own process group / session, no console window on Windows."""
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -246,6 +246,8 @@ def spawn_detached(cmd: list, cwd: Path, log_path: Path, env: dict | None = None
                   env=env, close_fds=True)
         if WIN:
             flags = CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW
+            if not allow_breakaway:
+                return subprocess.Popen(cmd, creationflags=flags, **kw)
             try:                                        # out of the AI client's job, if it lets us
                 return subprocess.Popen(cmd, creationflags=flags | CREATE_BREAKAWAY_FROM_JOB, **kw)
             except OSError:
@@ -404,15 +406,17 @@ def system_folders() -> list[Path]:
 class Strata:
     """One Strata folder: what is installed there, the PC, and the processes this server started."""
 
-    def __init__(self, root: Path | str = DEFAULT_ROOT):
+    def __init__(self, root: Path | str = DEFAULT_ROOT, *, config_path: Path | None = None,
+                 tracking_dir: Path | None = None, python: str | None = None):
         self.root = Path(root).resolve()
-        self.state_dir = self.root / STATE_DIR
+        self.config_path = Path(config_path).resolve() if config_path is not None else None
+        self.state_dir = Path(tracking_dir).resolve() if tracking_dir is not None else self.root / STATE_DIR
         self.lock = threading.Lock()                    # install / start / stop one at a time
         self.children: list[subprocess.Popen] = []      # reaped now and then (no zombies on POSIX)
         self._setup = None
         self._setup_tried = False
         self._hw_cache = None
-        self.python_override: str | None = None         # tests: the interpreter that runs setup / the server
+        self.python_override: str | None = python       # explicit interpreter; default stays the folder's venv
         self.health_timeout = 2.0
 
     # ---- setup.py's own tables and logic
@@ -498,6 +502,8 @@ class Strata:
 
     # ---- what is installed
     def configs(self) -> list[Path]:
+        if self.config_path is not None:
+            return [self.config_path] if self.config_path.is_file() else []
         return sorted((p for p in self.root.glob("strata-*.json") if not p.name.endswith(".shared-settings.json")),
                       key=lambda p: p.stat().st_mtime, reverse=True)   # #346: the Chat settings file is no config
 
@@ -1341,7 +1347,7 @@ class Tools:
                 "plan": plan, "log": str(log_path), "pid": p.pid}
 
     # ---- strata_start
-    def strata_start(self, model=None, port=None, gpu=None, wait_seconds=50) -> dict:
+    def strata_start(self, model=None, port=None, gpu=None, wait_seconds=50, *, launcher=None) -> dict:
         s = self.s
         with s.lock:
             job = s.install_job()
@@ -1386,7 +1392,7 @@ class Tools:
                 os.utime(cfg_path)                      # the most recently used model, as setup's start marks it
             except OSError:
                 pass
-            p = spawn_detached(cmd, s.root, log_path, env)
+            p = (launcher or spawn_detached)(cmd, s.root, log_path, env)
             s.children.append(p)
             time.sleep(0.1)
             ident = proc_identity(p.pid)
@@ -1418,8 +1424,9 @@ class Tools:
             time.sleep(1.0)
 
     # ---- strata_stop
-    def strata_stop(self, port=None, force=False) -> dict:
+    def strata_stop(self, port=None, force=False, *, request=None, terminate=None, tree_kill=None) -> dict:
         s = self.s
+        request, terminate, tree_kill = request or http_json, terminate or proc_terminate, tree_kill or proc_kill_tree
         with s.lock:
             tracked = s.tracked_server()
             if tracked and tracked.get("ended"):
@@ -1428,19 +1435,19 @@ class Tools:
             if tracked:
                 port = tracked["port"]
                 key = s.api_key_for(port)
-                st, body = http_json(f"http://127.0.0.1:{port}/status", api_key=key, timeout=3)
+                st, body = request(f"http://127.0.0.1:{port}/status", api_key=key, timeout=3)
                 if st == 200 and isinstance(body, dict) and body.get("busy") and not force:
                     raise ToolError("a request is running on Strata right now; wait for it, or call strata_stop "
                                     "with force=true to stop anyway")
-                st, body = http_json(f"http://127.0.0.1:{port}/unload", "POST", api_key=key, timeout=120)
+                st, body = request(f"http://127.0.0.1:{port}/unload", "POST", api_key=key, timeout=120)
                 unloaded = (body or {}).get("status") if isinstance(body, dict) else None
                 if st == 409 and not force:
                     raise ToolError("Strata is busy (a request is running or queued); call again with force=true "
                                     "to stop anyway")
-                proc_terminate(tracked["pid"], tracked["ident"])   # POSIX: SIGTERM = the server's own Ctrl+C path
+                terminate(tracked["pid"], tracked["ident"])   # POSIX: SIGTERM = the server's own Ctrl+C path
                 clean = wait_gone(tracked["pid"], tracked["ident"], 30)
                 if not clean:
-                    proc_kill_tree(tracked["pid"], tracked["ident"])
+                    tree_kill(tracked["pid"], tracked["ident"])
                     wait_gone(tracked["pid"], tracked["ident"], 15)
                 s.reap()
                 gone = not proc_alive(tracked["pid"], tracked["ident"])

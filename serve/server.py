@@ -790,8 +790,56 @@ class StrataEngine:
             tl = self.__dict__.setdefault("_tl", threading.local())
             tl.last = value
 
+    def _guarded_start(self, exe, args, cwd, env, pin, lifecycle, loading):
+        """Optional caller-owned lifecycle, including constructor failures before READY.
+
+        The hook retains the original Popen before contain/inspection and owns cleanup.
+        Its abort must escape calibration's candidate-rejection handling. No retry or
+        raw kill/wait fallback is permitted on this path; the default path is unchanged.
+        """
+        try:
+            lifecycle.before_spawn(self)
+            self.proc = popen("the Strata engine", [exe, "--serve", *args], cwd=cwd, stdin=subprocess.PIPE,
+                              stdout=subprocess.PIPE, stderr=self.log, text=True, encoding="utf-8", bufsize=1,
+                              env=env, **pin)
+            lifecycle.spawned(self)  # Retain the original process before any other fallible action.
+            contain(self.proc)
+            ready_q = queue.Queue()
+            threading.Thread(target=self._ready_pump, args=(self.proc, ready_q), daemon=True).start()
+            deadline = None if ENGINE_READY_S is None else time.monotonic() + ENGINE_READY_S
+            while True:
+                lifecycle.check(self)
+                left = None if deadline is None else deadline - time.monotonic()
+                if left is not None and left <= 0:
+                    raise EngineDied("Guarded engine READY deadline exceeded")
+                try:
+                    line = ready_q.get(timeout=min(.1, left) if left is not None else .1)
+                except queue.Empty:
+                    continue
+                if line is None:
+                    raise EngineDied("Guarded engine exited before READY")
+                if line.startswith("INFO "):
+                    for kv in line.split()[1:]:
+                        k, _, v = kv.partition("=")
+                        self.info[k] = int(v) if v.lstrip("-").isdigit() else v
+                if line.startswith("READY"):
+                    fields = line.split()
+                    self.max_context = int(fields[1])
+                    self.can_stop = "stop" in fields[2:]
+                    lifecycle.ready(self)
+                    return
+        except BaseException as error:
+            lifecycle.failed(self, error)
+            raise
+        finally:
+            loading.set()
+
     def __init__(self, exe: str, args: list[str], cwd: str | None = None, log: str | None = None,
-                 env: dict | None = None, lazy: bool = False, cpus: list[int] | None = None, _attempt: int = 0):
+                 env: dict | None = None, lazy: bool = False, cpus: list[int] | None = None, _attempt: int = 0,
+                 lifecycle=None, startup_retries: int | None = None):
+        if lifecycle is not None and (lazy or _attempt != 0 or startup_retries != 0):
+            raise ValueError("Guarded engine requires eager startup and zero internal retries")
+        self.lifecycle = lifecycle
         self.spawn = (exe, list(args), cwd, log, env, False, cpus)   # to start it again after it died (issue #27)
         self.session_save_reclaim = '--session-save-reclaim' in args
         paths = {k: v for k, v in zip(args, args[1:]) if k in ("--native", "--pack")}
@@ -838,79 +886,82 @@ class StrataEngine:
         pin = {}
         if cpus and hasattr(os, "sched_setaffinity"):    # replicas: this engine's own physical cores (serve/replicas.py)
             pin["preexec_fn"] = lambda: os.sched_setaffinity(0, cpus)
-        spawned_at = time.monotonic()
-        self.proc = popen("the Strata engine", [exe, "--serve", *args], cwd=cwd, stdin=subprocess.PIPE,
-                          stdout=subprocess.PIPE, stderr=self.log, text=True, encoding="utf-8", bufsize=1, env=env, **pin)
-        contain(self.proc)                               # ends with the server, however it ends (Windows)
-        # the READY read has a timeout (#1317): the lines come from a thread, up to READY, so the rest of the stream
-        # stays for _pump (one reader at a time)
-        ready_q: queue.Queue = queue.Queue()
-        threading.Thread(target=self._ready_pump, args=(self.proc, ready_q), daemon=True).start()
-        ready_deadline = None if ENGINE_READY_S is None else time.monotonic() + ENGINE_READY_S
-        timed_out = False
-        while True:
-            left = None if ready_deadline is None else ready_deadline - time.monotonic()
-            if left is not None and left <= 0:
-                timed_out = True
-                break
-            try:
-                line = ready_q.get(timeout=left)
-            except queue.Empty:
-                continue
-            if line is None:
-                break
-            if line.startswith("INFO "):
-                for kv in line.split()[1:]:
-                    k, _, v = kv.partition("=")
-                    self.info[k] = int(v) if v.lstrip("-").isdigit() else v
-            if line.startswith("READY"):
-                f = line.split()
-                self.max_context = int(f[1])
-                self.can_stop = "stop" in f[2:]
-                break
-        loading.set()
-        if self.max_context <= 0:
-            if timed_out:                               # still loading, or hung: end it, so the turn is not held for good
+        if lifecycle is not None:
+            self._guarded_start(exe, args, cwd, env, pin, lifecycle, loading)
+        else:
+            spawned_at = time.monotonic()
+            self.proc = popen("the Strata engine", [exe, "--serve", *args], cwd=cwd, stdin=subprocess.PIPE,
+                              stdout=subprocess.PIPE, stderr=self.log, text=True, encoding="utf-8", bufsize=1, env=env, **pin)
+            contain(self.proc)                               # ends with the server, however it ends (Windows)
+            # the READY read has a timeout (#1317): the lines come from a thread, up to READY, so the rest of the stream
+            # stays for _pump (one reader at a time)
+            ready_q: queue.Queue = queue.Queue()
+            threading.Thread(target=self._ready_pump, args=(self.proc, ready_q), daemon=True).start()
+            ready_deadline = None if ENGINE_READY_S is None else time.monotonic() + ENGINE_READY_S
+            timed_out = False
+            while True:
+                left = None if ready_deadline is None else ready_deadline - time.monotonic()
+                if left is not None and left <= 0:
+                    timed_out = True
+                    break
                 try:
-                    self.proc.kill()
-                except OSError:
+                    line = ready_q.get(timeout=left)
+                except queue.Empty:
+                    continue
+                if line is None:
+                    break
+                if line.startswith("INFO "):
+                    for kv in line.split()[1:]:
+                        k, _, v = kv.partition("=")
+                        self.info[k] = int(v) if v.lstrip("-").isdigit() else v
+                if line.startswith("READY"):
+                    f = line.split()
+                    self.max_context = int(f[1])
+                    self.can_stop = "stop" in f[2:]
+                    break
+            loading.set()
+            if self.max_context <= 0:
+                if timed_out:                               # still loading, or hung: end it, so the turn is not held for good
+                    try:
+                        self.proc.kill()
+                    except OSError:
+                        pass
+                try:                                        # its pipes and our handle on its log (the log stays)
+                    self.proc.wait(timeout=5)
+                    self.proc.stdin.close()
+                    self.proc.stdout.close()
+                    if log:
+                        self.log.close()
+                except (OSError, subprocess.TimeoutExpired):
                     pass
-            try:                                        # its pipes and our handle on its log (the log stays)
-                self.proc.wait(timeout=5)
-                self.proc.stdin.close()
-                self.proc.stdout.close()
-                if log:
-                    self.log.close()
-            except (OSError, subprocess.TimeoutExpired):
-                pass
-            if not timed_out and _attempt < START_RETRIES and \
-                    transient_start_failure(log, log_start, time.monotonic() - spawned_at, self.proc.returncode):
-                wait_s = 2.0 * (2 ** _attempt)              # 2, 4, 8 s: the previous process's GPU queues go away
-                exit_words = engine_exit_words(self.proc.returncode)
-                if start_log_marks(log, log_start):         # the runtime said so itself (hsa_exception ...)
-                    print(f"[strata] the engine stopped while the GPU runtime was starting (most often right after "
-                          f"another engine exited, whose GPU queues were still being released"
-                          f"{'; ' + exit_words if exit_words else ''}): starting it again in {wait_s:.0f} s "
-                          f"(try {_attempt + 2} of {START_RETRIES + 1})", flush=True)
-                else:                                       # an exit with nothing in the log: say only what is known
-                    print(f"[strata] the engine exited before it wrote anything to its log"
-                          f"{' (' + exit_words + ')' if exit_words else ''}; it may be a GPU runtime that was not "
-                          f"ready yet: starting it again in {wait_s:.0f} s (try {_attempt + 2} of {START_RETRIES + 1})",
-                          flush=True)
-                time.sleep(wait_s)
-                StrataEngine.__init__(self, exe, args, cwd, log, env, lazy, cpus, _attempt + 1)
-                return
-            why = (f"the engine did not report READY within {ENGINE_READY_S:.0f} s" if timed_out else
-                   "the engine exited before it was ready")
-            # EngineDied, not bare RuntimeError: a request waiting on this load must end with a 503
-            # through the request path's handler - a RuntimeError there left the turn with no answer (#1527)
-            note = "" if timed_out else start_exit_note(self.proc.returncode)
-            tail = start_log_tail(log, log_start)
-            lines = [x for x in tail.split("\n")[2:] if x.strip()]
-            if tail and lines and all(x.strip().startswith("[strata]") for x in lines):
-                tail += "\n  (those are the launcher's own lines: the engine itself wrote nothing)"
-            raise EngineDied(why + (f" (see {log})" if log else "") + note +
-                             start_failure_hint(log, log_start) + tail)
+                if not timed_out and _attempt < START_RETRIES and \
+                        transient_start_failure(log, log_start, time.monotonic() - spawned_at, self.proc.returncode):
+                    wait_s = 2.0 * (2 ** _attempt)              # 2, 4, 8 s: the previous process's GPU queues go away
+                    exit_words = engine_exit_words(self.proc.returncode)
+                    if start_log_marks(log, log_start):         # the runtime said so itself (hsa_exception ...)
+                        print(f"[strata] the engine stopped while the GPU runtime was starting (most often right after "
+                              f"another engine exited, whose GPU queues were still being released"
+                              f"{'; ' + exit_words if exit_words else ''}): starting it again in {wait_s:.0f} s "
+                              f"(try {_attempt + 2} of {START_RETRIES + 1})", flush=True)
+                    else:                                       # an exit with nothing in the log: say only what is known
+                        print(f"[strata] the engine exited before it wrote anything to its log"
+                              f"{' (' + exit_words + ')' if exit_words else ''}; it may be a GPU runtime that was not "
+                              f"ready yet: starting it again in {wait_s:.0f} s (try {_attempt + 2} of {START_RETRIES + 1})",
+                              flush=True)
+                    time.sleep(wait_s)
+                    StrataEngine.__init__(self, exe, args, cwd, log, env, lazy, cpus, _attempt + 1)
+                    return
+                why = (f"the engine did not report READY within {ENGINE_READY_S:.0f} s" if timed_out else
+                       "the engine exited before it was ready")
+                # EngineDied, not bare RuntimeError: a request waiting on this load must end with a 503
+                # through the request path's handler - a RuntimeError there left the turn with no answer (#1527)
+                note = "" if timed_out else start_exit_note(self.proc.returncode)
+                tail = start_log_tail(log, log_start)
+                lines = [x for x in tail.split("\n")[2:] if x.strip()]
+                if tail and lines and all(x.strip().startswith("[strata]") for x in lines):
+                    tail += "\n  (those are the launcher's own lines: the engine itself wrote nothing)"
+                raise EngineDied(why + (f" (see {log})" if log else "") + note +
+                                 start_failure_hint(log, log_start) + tail)
         self.known_ctx = self.max_context   # survives a failed restart: requests keep their limit and restart it
         # (from PR #41, midhatn) a locally built engine can sit next to another release's BUILD.json: engines that
         # report their own version (INFO engine=, 0.1.8+) win, the manifest stays the fallback for older ones
@@ -1075,6 +1126,10 @@ class StrataEngine:
         close() ends and waits for the old process first (EngineStuck when it cannot be ended).  A start that still
         exits before READY - a dead engine's VRAM can take a while to come back, notably on ROCm - is retried
         (PR #637)."""
+        if getattr(self, "lifecycle", None) is not None:
+            error = EngineDied("Guarded engine cannot auto-restart")
+            self.lifecycle.failed(self, error)
+            raise error
         info = dict(self.info)
         self.starting = True                     # prepare() answers 503 "starting" meanwhile (#344)
         try:
@@ -1931,6 +1986,8 @@ class StrataEngine:
         if getattr(self, "batch", 0):
             yield from self.generate_batched(ids, max_new, sampling, cancel, embeddings)
             return
+        if getattr(self, "lifecycle", None) is not None:
+            self.lifecycle.check(self)  # Never submit the next prompt after a latched guard/cancel.
         self.progress, self.progress_ms, self.reused = None, 0, 0
         self.prefill_tok_s_mean = None
         # an image request takes the same sampling keys as text (#75: it used to decode greedily whatever was asked)
@@ -1952,6 +2009,8 @@ class StrataEngine:
         stall_state: dict = {}
         try:
             while True:
+                if getattr(self, "lifecycle", None) is not None:
+                    self.lifecycle.check(self)
                 wait = 10.0
                 if allow > 0:
                     wait = min(wait, allow - (time.monotonic() - heard))
@@ -1962,6 +2021,8 @@ class StrataEngine:
                 try:
                     line = self.lines.get(timeout=min(wait, 0.5))
                 except queue.Empty:
+                    if getattr(self, "lifecycle", None) is not None:
+                        self.lifecycle.check(self)
                     if cancel.is_set():
                         return
                     if stall_s > 0:
@@ -2016,6 +2077,13 @@ class StrataEngine:
                     done = True
                     raise ValueError(line[4:].strip())
         finally:
+            if not done and getattr(self, "lifecycle", None) is not None:
+                # The retained lifecycle owns partial-request shutdown and finite cleanup.
+                original = sys.exc_info()[1]
+                error = original if original is not None and not isinstance(original, GeneratorExit) else \
+                    EngineDied("Guarded request did not complete")
+                self.lifecycle.failed(self, error)
+                raise error
             if not done:                                  # the consumer stopped early: stop the engine, drain to DONE
                 if self.can_stop:
                     try:
@@ -2084,6 +2152,10 @@ class StrataEngine:
     def _silent(self, what: str) -> EngineSilent:
         """#481: end an engine that lost step with the server (its main thread waits for a command the server never
         sends), so the next request starts it again: killed now, its GPU and RAM go back with the process."""
+        if getattr(self, "lifecycle", None) is not None:
+            error = EngineSilent(what)
+            self.lifecycle.failed(self, error)
+            return error
         self.silent_note = ("The engine and the server lost step (issue #481; a very slow PC can raise "
                             "\"engine_silence_s\" in the config, 0 = wait forever). If it happens again, please add "
                             "the end of the engine log to github.com/Niko1221/Strata/issues/481.")
@@ -2198,6 +2270,8 @@ class StrataEngine:
     def close(self):
         """End the engine process: QUIT first (the engine frees its memory itself - unpinning tens of GB can take
         a while), then terminate, then kill, each given 20 s.  Raises EngineStuck when it still runs after all three."""
+        if getattr(self, "lifecycle", None) is not None:
+            return self.lifecycle.close(self)
         if self.proc is None:
             return
         try:
@@ -2271,18 +2345,126 @@ def vision_start_error(line: str, log=None) -> str:
     return "the vision encoder did not start: " + text
 
 
+class VisionCleanupPending(EngineStuck):
+    """Keep the encoder owner reachable even when construction cannot complete."""
+    def __init__(self, vision):
+        self.vision = vision
+        super().__init__(vision.error)
+
+
+class ImageRequestFatal(ValueError):
+    """A failed image request, never a recoverable unreadable-tool-image note."""
+
+
+class HipImageRequest:
+    """One HIP prepare operation's cancellation and payload-free evidence.
+
+    No new aggregate limits: existing per-image/body/context/timeouts apply.
+    """
+    def __init__(self, messages, cancel, vision):
+        self.id = uuid.uuid4().hex
+        self.cancel = cancel
+        self.vision = vision
+        self.fetched, self.features = {}, {}
+        self.source_bytes = self.feature_bytes = 0
+        self.rows = []
+        self.indices = {}
+        for message in messages:
+            content = message.get("content")
+            for item in content if isinstance(content, list) else ():
+                if isinstance(item, dict) and item.get("type") == "image":
+                    index = len(self.rows)
+                    self.indices[id(item)] = index
+                    self.rows.append(dict(index=index, role=message.get("role"), type="image"))
+        self.native_started = self.finished = False
+        self.emit("begin", image_count=len(self.rows))
+
+    def emit(self, phase, **fields):
+        print("[strata-image] " + json.dumps(dict(request_id=self.id, at=time.time(), phase=phase, **fields)), flush=True)
+
+    def check(self):
+        if self.cancel is not None and self.cancel.is_set():
+            raise ClientGone()
+
+    def load(self, source):
+        self.check()
+        if source not in self.fetched:
+            try:
+                raw = source if isinstance(source, bytes) else Vision.load(source, 20 << 20)
+            finally:
+                self.check()
+            self.source_bytes += len(raw)
+            self.fetched[source] = raw
+        return self.fetched[source]
+
+    def encoded(self, index, path, n, cache_hit, raw):
+        self.check()
+        try:
+            with Path(path).open("rb") as stream:
+                header = stream.read(20)
+                magic, count, nx, ny, width = struct.unpack("<5i", header)
+                size = os.fstat(stream.fileno()).st_size
+                if (magic != 0x31455653 or count != n or not 0 < n <= self.vision.max_tokens or nx <= 0 or ny <= 0
+                        or nx * ny != n or width != self.vision.n_embd or size != 20 + n * width * 4):
+                    raise ValueError("invalid cached/current SVE shape")
+                data = header + stream.read()
+                import array
+                values = array.array("f")
+                values.frombytes(data[20:])
+                if not all(math.isfinite(value) for value in values):
+                    raise ValueError("non-finite SVE embedding")
+        except ImageRequestFatal:
+            raise
+        except (OSError, ValueError, struct.error) as error:
+            raise ImageRequestFatal("HIP image embedding verification failed") from error
+        sha = hashlib.sha256(data).hexdigest()
+        if index in self.features and self.features[index] != (str(path), n, sha):
+            raise ImageRequestFatal("HIP image occurrence changed during preparation")
+        if index not in self.features:
+            self.feature_bytes += size
+            self.features[index] = (str(path), n, sha)
+            if not hasattr(self.vision, "request_pins"):self.vision.request_pins = {}
+            self.vision.request_pins.setdefault(self.id,set()).add(str(path))
+            self.rows[index].update(source_bytes=len(raw), source_sha256=hashlib.sha256(raw).hexdigest(),
+                cache_hit=cache_hit, n=n, nx=nx, ny=ny, width=width, sve_bytes=size, sve_sha256=sha)
+            self.emit("encoded", **self.rows[index])
+        self.check()
+
+    def release_prepare(self):
+        with self.vision.lock:
+            getattr(self.vision, "request_pins", {}).pop(self.id, None)
+        self.fetched.clear()  # do not keep image/source bytes through native generation
+        self.features.clear()
+
+    @contextlib.contextmanager
+    def encoder_lock(self, lock):
+        self.check()
+        while not lock.acquire(timeout=.1):
+            self.check()
+        try:
+            self.check()
+            yield
+        finally:
+            lock.release()
+
+
 class Vision:
     """The resident image encoder: `strata-vision` (llama.cpp mtmd + the mmproj file) reads `ENC <image> <out>`
     lines and writes each image's embeddings; results are cached by the image's hash, so a conversation that
     sends the same picture again (every turn, with most clients) encodes it once."""
 
     @staticmethod
-    def work_dir() -> Path:
+    def work_dir(private_parent: Path | None = None) -> Path:
         """#480: the directory for the encoder's files.  The engine reads the embeddings file named in a `GENI` line
         and the encoder the output named in an `ENC <image> <out>` line, both split at spaces, so a space in the path
         (a %TEMP% under a user name with a space) broke every image.  The system temp directory is used while its path
         has no space, then the working directory, then the system drive's root; the plain temp directory is the last
         resort (the encoder's own files are then named relative to it, see `_start`)."""
+        if private_parent is not None:
+            if not private_parent.is_absolute() or " " in str(private_parent):
+                raise ValueError("HIP vision temp_dir must be absolute and contain no spaces")
+            private_parent.mkdir(parents=True, exist_ok=True)
+            return Path(tempfile.mkdtemp(prefix="strata-vision-", dir=private_parent))
         for parent in (None, Path.cwd(), Path(os.environ.get("SystemDrive", "C:") + os.sep)):
             try:
                 d = Path(tempfile.mkdtemp(prefix="strata-vision-", dir=parent))
@@ -2297,17 +2479,43 @@ class Vision:
         return Path(tempfile.mkdtemp(prefix="strata-vision-"))
 
     def __init__(self, cfg: dict, log=None, env: dict | None = None, lazy: bool = False):
+        self.hip_required = cfg.get("backend") == "hip"
+        self.error = None
+        self.cleanup_pending = False
+        self.encode_timeout = 60.0
+        self.encode_peak_s = 0.0
+        if self.hip_required:
+            cap = cfg.get("max_tokens", 300)
+            if isinstance(cap, bool) or not isinstance(cap, int) or not 1 <= cap <= 1024:
+                raise ValueError("HIP vision max_tokens must be an integer between 1 and 1024; start with 300")
+            self.max_tokens = cap
+        else:
+            self.max_tokens = int(cfg.get("max_tokens") or 0)
+        if self.hip_required and cfg.get("min_tokens") and int(cfg["min_tokens"]) > self.max_tokens:
+            raise ValueError("HIP vision min_tokens exceeds max_tokens")
         absolute = lambda p: os.path.abspath(p) if os.path.dirname(str(p)) else p   # the encoder runs in its own dir (#480)  # noqa: E731
         args = [absolute(cfg["exe"]), "--mmproj", absolute(cfg["mmproj"]), "--model", absolute(cfg["model"])]
         if cfg.get("gpu"):
             args.append("--gpu")
+        if cfg.get("backend") == "hip":
+            if cfg.get("gpu") is not True:
+                raise ValueError('vision.backend="hip" requires vision.gpu=true')
+            args.append("--require-hip")
         if cfg.get("threads"):
             args += ["--threads", str(cfg["threads"])]
-        if cfg.get("max_tokens"):
-            args += ["--max-tokens", str(cfg["max_tokens"])]
+        if self.max_tokens:
+            args += ["--max-tokens", str(self.max_tokens)]
         if cfg.get("min_tokens"):                       # #767: mtmd's image_min_tokens (a hand-edited key)
             args += ["--min-tokens", str(cfg["min_tokens"])]
-        self.dir = self.work_dir()
+        if self.hip_required:
+            parent = Path(cfg.get("temp_dir") or (env or {}).get("TEMP") or ROOT / "tmp" / "vision-hip")
+            self.dir = self.work_dir(parent)
+            env = dict(env or os.environ)
+            env["TEMP"] = env["TMP"] = str(parent)
+            env["AMD_COMGR_CACHE_DIR"] = str(parent / "comgr")
+            (parent / "comgr").mkdir(exist_ok=True)
+        else:
+            self.dir = self.work_dir()
         self.spawn = (args, log, env)                   # to start it again after an unload
         self.proc = None
         self.stopped = True
@@ -2320,9 +2528,17 @@ class Vision:
         self.elastic_mib = int(cfg.get("elastic_mib") or 2048)
         self.elastic_idle_s = float(cfg.get("elastic_idle_s") or 120)
         if not lazy and not self.elastic:
-            self._start()
+            try:
+                self._start()
+            except Exception:
+                if self.hip_required and self.cleanup_pending:
+                    raise
+                self.shutdown()
+                raise
 
     def _start(self):
+        if getattr(self, "hip_required", False) is True and self.proc is not None:
+            self._hip_stop(force=True)
         args, log, env = self.spawn
         # cwd is the encoder's directory: the ENC lines name the files relative to it (#480: no space in the line)
         self.proc = popen("the image encoder", args, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -2332,9 +2548,14 @@ class Vision:
         try:
             line = self._readline(VISION_READY_S, "the vision encoder did not start")
         except RuntimeError as e:                       # silent for VISION_READY_S: it was ended, and it is not left half-started
+            if getattr(self, "hip_required", False) is True:
+                raise
             self.proc, self.stopped = None, True
             raise RuntimeError(str(e)) from None
         if not line.startswith("READY"):
+            if getattr(self, "hip_required", False) is True:
+                self._hip_stop(force=True)
+                raise RuntimeError(vision_start_error(line, self.spawn[1]))
             proc, self.proc = self.proc, None
             self.stopped = True
             try:
@@ -2344,8 +2565,51 @@ class Vision:
                 pass
             raise RuntimeError(vision_start_error(line, self.spawn[1]))
         self.stopped = False
+        self.error = None
+        if self.hip_required:
+            try:
+                self.n_embd = int(line.split()[1])
+                if self.n_embd <= 0:
+                    raise ValueError("invalid width")
+            except (IndexError, ValueError):
+                self.close()
+                raise RuntimeError("the HIP vision encoder returned an invalid READY width") from None
 
-    def _readline(self, timeout: float, what: str) -> str:
+    def capability(self) -> dict:
+        available = self.alive()
+        return {"enabled": True, "available": available, "backend": "hip" if self.hip_required else "legacy",
+                "error": None if available else self.error or "the image encoder is not running",
+                "cleanup_pending": self.cleanup_pending}
+
+    def _hip_stop(self, force=False):
+        """Retain this Popen (and its process handle) until poll/wait proves exit."""
+        proc = self.proc
+        kill_error = None
+        try:
+            if proc is not None and proc.poll() is None:
+                if not force:
+                    try:
+                        proc.stdin.write("QUIT\n")
+                        proc.stdin.flush()
+                        proc.wait(timeout=10)
+                    except (OSError, ValueError, subprocess.TimeoutExpired):
+                        force = True
+                if force:
+                    try:
+                        proc.kill()
+                    except OSError as exc:
+                        kill_error = exc
+                    proc.wait(timeout=5)
+        except (OSError, ValueError, subprocess.TimeoutExpired) as exc:
+            self.stopped, self.cleanup_pending = True, True
+            self.error = f"HIP vision cleanup pending (pid={getattr(proc, 'pid', None)}): {exc}"
+            if kill_error is not None:
+                self.error += f"; kill failed: {kill_error}"
+            raise VisionCleanupPending(self) from exc
+        self.proc = None
+        self.stopped, self.cleanup_pending, self.error = True, False, None
+
+    def _readline(self, timeout: float, what: str, cancel=None) -> str:
         """One line from the encoder, waiting at most `timeout` s (#1317).  On a timeout the encoder is killed, so the
         next request starts a fresh one, and the read raises RuntimeError instead of holding the request turn."""
         proc = self.proc
@@ -2358,13 +2622,33 @@ class Vision:
                 got.put("")
 
         threading.Thread(target=read, daemon=True).start()
+        deadline = time.monotonic() + timeout if timeout is not None else None
         try:
-            return got.get(timeout=timeout)
-        except queue.Empty:
-            try:
-                proc.kill()
-            except OSError:
-                pass
+            if cancel is None:
+                return got.get(timeout=timeout)
+            while True:
+                if cancel.is_set():
+                    raise ClientGone()
+                left = deadline - time.monotonic() if deadline is not None else 0.1
+                if left <= 0:
+                    raise queue.Empty
+                try:
+                    return got.get(timeout=min(left, 0.1))
+                except queue.Empty:
+                    continue
+        except (queue.Empty, ClientGone) as exc:
+            if getattr(self, "hip_required", False) is True:
+                self._hip_stop(force=True)
+            else:
+                try:
+                    proc.kill()
+                    proc.wait(timeout=5)
+                except (OSError, subprocess.TimeoutExpired):
+                    pass
+            self.stopped = True
+            self.error = "the image encoder was cancelled" if isinstance(exc, ClientGone) else f"{what}: timeout"
+            if isinstance(exc, ClientGone):
+                raise
             raise RuntimeError(f"{what}: it said nothing for {timeout:.0f} s") from None
 
     def alive(self) -> bool:
@@ -2377,6 +2661,10 @@ class Vision:
 
     def restart(self):
         """Start the encoder again after an unload (or if it died); the cache of encoded images is kept."""
+        if getattr(self, "hip_required", False) is True:
+            self._hip_stop(force=True)
+            self._start()
+            return
         if self.proc is not None:
             try:
                 self.proc.kill()
@@ -2387,14 +2675,17 @@ class Vision:
         self._start()
 
     @staticmethod
-    def load(source: str) -> bytes:
+    def load(source: str, max_bytes: int | None = None) -> bytes:
         if source.startswith("data:"):
             try:
-                return base64.b64decode(source.split(",", 1)[1])
+                encoded = source.split(",", 1)[1]
+                if max_bytes is not None and len(encoded) > 4 * ((max_bytes + 2) // 3):
+                    raise ValueError("the image source is larger than 20 MiB")
+                return base64.b64decode(encoded, validate=max_bytes is not None)
             except (IndexError, ValueError) as e:                # no comma, or not base64
                 raise ValueError(f"the image's data: URL could not be read ({e})") from None
         if source.startswith(("http://", "https://")):
-            return Vision.download(source)
+            return Vision.download(source, max_bytes)
         path = source[7:] if source.startswith("file://") else source
         # refused before anything looks at the path: file://host/share/x.png is \\host\share\x.png ("file://C:/x.png",
         # a drive, is a client's spelling of file:///C:/x.png)
@@ -2404,25 +2695,29 @@ class Vision:
                              "file://host/...) are not read")
         if path and os.path.isfile(path):
             try:
-                return Path(path).read_bytes()
+                if max_bytes is None:
+                    return Path(path).read_bytes()
+                with open(path, "rb") as f:
+                    return f.read(max_bytes + 1) if max_bytes is not None else f.read()
             except OSError as e:
                 raise ValueError(f"the image could not be read from {path} ({e})") from None
         raise ValueError("an image must be a data: URL, an http(s) URL or a local file path")
 
     @staticmethod
-    def download(url: str) -> bytes:
+    def download(url: str, max_bytes: int | None = None) -> bytes:
         """An image URL's bytes, at most IMAGE_URL_MAX of them: the whole response was read, so a huge or endless one
         filled the memory.  One that cannot be read is a ValueError (a 400 that says so), not a dropped connection."""
-        too_big = f"the image URL's file is over {IMAGE_URL_MAX >> 20} MiB"
+        maximum = min(IMAGE_URL_MAX, max_bytes) if max_bytes is not None else IMAGE_URL_MAX
+        too_big = f"the image URL's file is over {maximum >> 20} MiB"
         try:
             with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "strata"}), timeout=60) as r:
                 size = r.headers.get("Content-Length") or ""
-                if size.isdigit() and int(size) > IMAGE_URL_MAX:
+                if size.isdigit() and int(size) > maximum:
                     raise ValueError(too_big)
-                data = r.read(IMAGE_URL_MAX + 1)
+                data = r.read(maximum + 1)
         except (OSError, HTTPException) as e:
             raise ValueError(f"the image URL could not be read: {e}") from None
-        if len(data) > IMAGE_URL_MAX:
+        if len(data) > maximum:
             raise ValueError(too_big)
         return data
 
@@ -2470,43 +2765,112 @@ class Vision:
         im.save(out, format="PNG")
         return out.getvalue()
 
-    def encode_all(self, sources: list, cancel=None) -> list[tuple[Path, int]]:
+    def encode_all(self, sources: list, cancel=None, *, request=None, occurrences=None) -> list[tuple[Path, int]]:
         """encode() for every image of one request: the files of this request's earlier images are never evicted to
         make room for a later one (#1072: with more than 64 unique images the first was deleted before the request
         had read it).  `cancel` (#1999): a request whose client left does not encode its next pictures."""
         out: list[tuple[Path, int]] = []
-        for src in sources:
+        for index, src in enumerate(sources):
             if cancel is not None and cancel.is_set():
                 raise ClientGone()
-            out.append(self.encode(src, keep=[p for p, _ in out]))
+            if getattr(self, "hip_required", False) is True:
+                out.append(self.encode(src, keep=[p for p, _ in out], cancel=cancel, request=request,
+                                       occurrence=occurrences[index] if occurrences is not None else index))
+            else:
+                out.append(self.encode(src, keep=[p for p, _ in out]))
         return out
 
-    def encode(self, source: str | bytes, keep=()) -> tuple[Path, int]:
+    def checked_image(self, data: bytes) -> bytes:
+        """Validate compressed input and dimensions before any decoder allocates pixels."""
+        if len(data) > 20 << 20:
+            raise ValueError("the image source is larger than 20 MiB")
+        try:
+            import io
+            from PIL import Image
+            with Image.open(io.BytesIO(data)) as im:
+                w, h = im.size
+                if im.format not in ("JPEG", "PNG", "WEBP"):
+                    raise ValueError("HIP vision accepts JPEG, PNG and WebP")
+                if min(w, h) <= 0 or max(w, h) > 4096 or w * h > 4_000_000:
+                    raise ValueError("HIP vision requires edges <=4096 and at most 4000000 pixels")
+                im.verify()
+        except Exception as e:
+            raise ValueError(f"the image could not be read ({e})") from None
+        return self.normalize(data)
+
+    def encode(self, source: str | bytes, keep=(), cancel=None, *, request=None, occurrence=None) -> tuple[Path, int]:
         """-> (embeddings file, number of image tokens).  `source`: what load() reads, or the image's bytes.
         `keep`: files the caller still needs (never evicted by this call)."""
-        data = self.normalize(source if isinstance(source, bytes) else self.load(source))
+        hip = getattr(self, "hip_required", False) is True
+        if hip and self.cleanup_pending:
+            raise VisionCleanupPending(self)
+        if request is not None:request.check()
+        raw = (source if isinstance(source, bytes) else request.load(source) if request is not None else
+               (self.load(source, 20 << 20) if hip else self.load(source)))
+        data = self.checked_image(raw) if hip else self.normalize(raw)
+        if request is not None:request.check()
         key = hashlib.sha256(data).hexdigest()[:32]
-        with self.lock:
+        with request.encoder_lock(self.lock) if request is not None else self.lock:
             if key in self.cache:
                 self.cache[key] = self.cache.pop(key)                  # most recently used last
+                if request is not None:request.encoded(occurrence,*self.cache[key],True,raw)
                 return self.cache[key]
             img, out = self.dir / f"{key}.img", self.dir / f"{key}.sve"
             img.write_bytes(data)
+            encode_t0 = time.monotonic()
             try:
                 self.proc.stdin.write(f"ENC {img.name} {out.name}\n")      # relative to the encoder's cwd (#480)
                 self.proc.stdin.flush()
                 try:
-                    line = self._readline(VISION_ENCODE_S, "the image could not be read").strip()
+                    line = (self._readline(self.encode_timeout, "the image could not be read", cancel=cancel)
+                            if hip else self._readline(VISION_ENCODE_S, "the image could not be read")).strip()
                 except RuntimeError as e:                 # silent for VISION_ENCODE_S: the encoder was ended (#1317)
+                    if isinstance(e, VisionCleanupPending):
+                        raise
                     self.stopped = True                   # alive() is False, so the next request starts it again
+                    if hip:raise ImageRequestFatal("the HIP image encoder failed or timed out") from e
                     raise ValueError(str(e)) from None
+            except OSError as error:
+                if not (hip and self.cleanup_pending):out.unlink(missing_ok=True)
+                if hip:raise ImageRequestFatal("the HIP image encoder pipe failed") from error
+                raise
+            except BaseException:
+                if not (hip and self.cleanup_pending):
+                    out.unlink(missing_ok=True)
+                raise
             finally:                                                   # #352: also when the encoder's pipe is gone
-                img.unlink(missing_ok=True)
+                if not (hip and self.cleanup_pending):
+                    img.unlink(missing_ok=True)
             if not line.startswith("OK"):
+                out.unlink(missing_ok=True)
+                if hip:raise ImageRequestFatal("the HIP image encoder failed or stopped")
                 raise ValueError("the image could not be read: " + (line[4:] if line.startswith("ERR") else
                                                                      "the vision encoder stopped"))
+            if hip:
+                try:
+                    n, nx, ny = map(int, line.split()[1:4])
+                    with out.open("rb") as f:
+                        header = f.read(20)
+                        expected = (0x31455653, n, nx, ny, self.n_embd)
+                        if n <= 0 or n > self.max_tokens or nx <= 0 or ny <= 0 or nx * ny != n or \
+                                len(header) != 20 or struct.unpack("<5i", header) != expected or \
+                                os.fstat(f.fileno()).st_size != 20 + n * self.n_embd * 4:
+                            raise ValueError("invalid SVE1 shape or image token limit")
+                        import array
+                        import math
+                        values = array.array("f")
+                        values.frombytes(f.read())
+                        if not all(math.isfinite(x) for x in values):
+                            raise ValueError("non-finite SVE1 embedding")
+                except (OSError, ValueError, struct.error) as e:
+                    out.unlink(missing_ok=True)
+                    raise ImageRequestFatal("the HIP image output is invalid") from e
+                self.encode_peak_s = max(self.encode_peak_s, time.monotonic() - encode_t0)
+                self.encode_timeout = 2 * self.encode_peak_s + 10
             self.cache[key] = (out, int(line.split()[1]))
+            if request is not None:request.encoded(occurrence,*self.cache[key],False,raw)
             held = {str(p) for p in keep} | {str(out)}
+            for pins in getattr(self, "request_pins", {}).values():held.update(pins)
             for old in list(self.cache):                               # oldest first, but never one still in use
                 if len(self.cache) <= 64:
                     break
@@ -2515,6 +2879,9 @@ class Vision:
             return self.cache[key]
 
     def close(self):
+        if getattr(self, "hip_required", False) is True:
+            self._hip_stop()
+            return
         proc, self.proc = self.proc, None
         if proc is None:
             self.stopped = True
@@ -2539,6 +2906,13 @@ class Vision:
         /tmp that is RAM) goes with it instead of piling up with every start.  unload() keeps it for the restart."""
         self.close()
         shutil.rmtree(self.dir, ignore_errors=True)
+
+
+def vision_capability(vision) -> dict:
+    if getattr(vision, "hip_required", False) is True:
+        return vision.capability()
+    enabled = vision is not None
+    return {"enabled": enabled, "available": enabled, "error": None}
 
 
 def gpu_list(cfg: dict) -> list[int]:
@@ -2652,7 +3026,8 @@ def engine_args(cfg: dict) -> list[str]:
     if isinstance(cfg.get("vision"), dict) and "--vision" not in args:
         args.append("--vision")
         note = "added --vision"
-        if cfg["vision"].get("gpu") and "--vram-reserve-mib" not in args:
+        if cfg["vision"].get("gpu") and "--vram-reserve-mib" not in args and not (
+                sys.platform == "win32" and cfg["vision"].get("backend") == "hip"):
             args += ["--vram-reserve-mib", "700"]
             note += " and --vram-reserve-mib 700"
         print(f'[strata] the config has a "vision" section but no --vision in its args: {note} (run setup again with '
@@ -2670,7 +3045,11 @@ def engine_args(cfg: dict) -> list[str]:
         if isinstance(seg, int) and not isinstance(seg, bool) and seg > 0 and "--vram-segment-mib" not in args:
             args += ["--vram-segment-mib", str(seg)]
     args += parallel_args(cfg, args)
-    return learned_profile_args(cfg, args)
+    args = learned_profile_args(cfg, args)
+    if sys.platform == "win32" and (cfg.get("vision") or {}).get("backend") == "hip":
+        from serve.vision_hip import reserve_args
+        args = reserve_args(args)
+    return args
 
 
 PARALLEL_MAX = 8      # the engine's batch window holds at most 8 rows (kVerifyMaxT); --batch-mtp waves more through it
@@ -2920,6 +3299,9 @@ def vision_env(cfg: dict, env: dict) -> dict:
     """The image encoder's environment: the engine's, unless the config's vision section names its own "cuda_device"
     (numbered like nvidia-smi) - then the encoder runs on that card alone, so a spare GPU can hold it while the engine
     keeps all of its own cards' VRAM (#408, Efs-O).  Without it, nothing changes."""
+    if (cfg.get("vision") or {}).get("backend") == "hip":
+        from serve.vision_hip import windows_hip_env
+        return windows_hip_env(cfg["vision"], env)
     dev = (cfg.get("vision") or {}).get("cuda_device")
     if dev is None:
         return env
@@ -3408,6 +3790,9 @@ class Service:
     def ensure_loaded(self):
         """Start the engine if it is not running (unloaded, or it died - issue #27), after the before_load hook and
         the free-VRAM check.  The caller holds self.fifo."""
+        if (getattr(self.vision, "hip_required", False) is True
+                and getattr(self.vision, "cleanup_pending", False)):
+            self.vision._hip_stop(force=True)
         if self.loaded() and not self._vision_down():
             return
         hook_failed = None
@@ -3464,6 +3849,8 @@ class Service:
             print("[strata] starting the vision encoder ...", flush=True)   # the engine sizes its cache
             try:
                 self.vision.restart()
+            except VisionCleanupPending:
+                raise
             except Exception as e:
                 raise EngineDied(f"the vision encoder failed to start: {e}") from e
             vision_started = True
@@ -3534,7 +3921,9 @@ class Service:
         """POST /load and every generation request: start the engine now if it is unloaded (raises GpuBusy)."""
         # a request is on its way: the idle thread must not unload between this and the request's own start
         self.last_request_at = time.time()
-        if self.loaded() and not self._vision_down():
+        if (self.loaded() and not self._vision_down()
+                and not (getattr(self.vision, "hip_required", False) is True
+                         and getattr(self.vision, "cleanup_pending", False))):
             return
         trace = getattr(self.request_trace, "record", None)
         waiting = time.perf_counter()
@@ -3583,14 +3972,18 @@ class Service:
         if not self.fifo.acquire(blocking=False):
             return "busy"
         try:
-            if not self.engine.alive():
+            engine_loaded = self.engine.alive()
+            hip_owned = (getattr(self.vision, "hip_required", False) is True
+                         and (self.vision.proc is not None or self.vision.cleanup_pending))
+            if not engine_loaded and not hip_owned:
                 return "not loaded"
             with self.status_lock:
                 if self.status.get("busy") or self.status.get("queued"):
                     return "busy"
             if idle_for is not None and time.time() - (self.last_request_at or self.started_at) < idle_for:
                 return "busy"
-            self.engine.unload()
+            if engine_loaded:
+                self.engine.unload()
             if self.vision is not None and hasattr(self.vision, "unload"):
                 self.vision.unload()
             self.vision_held = False
@@ -3779,7 +4172,7 @@ class Service:
                 live["state"] = "generating"
         if hasattr(self.engine, "replica_view"):        # opt-in replicas: each one's state and requests routed to it
             live["replicas"] = self.engine.replica_view()
-        engine = {"model": self.model, "max_context": self.reported_ctx(), "images": self.vision is not None,
+        engine = {"model": self.model, "max_context": self.reported_ctx(), "images": vision_capability(self.vision)["available"],
                   **dict(getattr(self.engine, "info", {}) or {})}
         tel = self.telemetry.snapshot() if getattr(self, "telemetry", None) else {"now": {}, "history": {}, "static": {}}
         parked = self.conv_log.poll(getattr(self.engine, "log_path", None), getattr(self.engine, "log_start", None))
@@ -3839,7 +4232,6 @@ class Service:
             return round(v / unit, digits) if isinstance(v, (int, float)) else None
 
         busy, ctx = bool(s.get("busy")), self.reported_ctx()
-        images = self.vision is not None
         return {
             "service": "strata", "model": self.model,
             "loaded": self.loaded(), "auto_load": hasattr(self.engine, "restart"),
@@ -3853,7 +4245,7 @@ class Service:
             "concurrency": {"serving": max(1, int(getattr(self.engine, "batch", 0) or 0)),
                             "requested": max(1, int(getattr(self.engine, "batch", 0) or 0))},
             "dialects": ["/v1/chat/completions", "/v1/messages", "/v1/responses"],
-            "vision": {"enabled": images, "available": images, "error": None},
+            "vision": vision_capability(self.vision),
             "image_generation": self.images.status() if self.images is not None else {"enabled": False},
             "activity": {"requests": totals["requests"] + int(busy), "in_flight": int(busy) + int(s.get("queued") or 0),
                          "last_request_at": int(last_at) if last_at else None},
@@ -3917,7 +4309,7 @@ class Service:
         finally:
             self.fifo.release()
 
-    def _note_unreadable_tool_images(self, messages, cancel=None):
+    def _note_unreadable_tool_images(self, messages, cancel=None, image_request=None):
         """A picture a tool returned (Claude Code's Read of an image file) that this server cannot read - it has no
         image encoder, or the encoder refuses that picture - becomes a short note in its place instead of a 400.
         Clients resend the whole history every turn, so one unreadable tool picture would fail every later request of
@@ -3937,13 +4329,26 @@ class Service:
                     try:
                         if cancel is not None and cancel.is_set():
                             raise ClientGone()
-                        if src.startswith(("http://", "https://")):
-                            src = fetched[item["source"]] = Vision.download(src)   # outside the FIFO, as in prepare()
+                        if image_request is not None:
+                            src = fetched[item["source"]] = image_request.load(src)
+                        elif src.startswith(("http://", "https://")):
+                            src = fetched[item["source"]] = (Vision.download(src, 20 << 20)
+                                if getattr(self.vision, "hip_required", False) is True else Vision.download(src))
                         with self._turn(cancel):  # the encoder takes its turn with the requests (see below)
-                            self.vision.encode(src)
+                            if getattr(self.vision, "hip_required", False) is True:
+                                self.vision.encode(src, cancel=cancel, request=image_request,
+                                                   occurrence=image_request.indices[id(item)] if image_request else None)
+                            else:
+                                self.vision.encode(src)
+                    except ImageRequestFatal:
+                        raise
                     except (ValueError, OSError) as e:
                         why = str(e)
                 if why is not None:
+                    if image_request is not None:
+                        index=image_request.indices[id(item)]
+                        image_request.rows[index]['omitted_unreadable']=True
+                        image_request.emit("omitted_unreadable",index=index)
                     print(f"[strata] a picture a tool returned was left out of the prompt: {why}", flush=True)
                     content[n] = {"type": "text", "text": f"[image omitted: {why}]"}
         return fetched
@@ -3954,12 +4359,35 @@ class Service:
 
 
     def prepare(self, messages, tools, kwargs, max_new=None, force=None, req=None, cancel=None):
+        image_request = (HipImageRequest(messages, cancel, self.vision)
+                         if getattr(self.vision, "hip_required", False) is True and images_of(messages) else None)
+        self.embeddings.image_request = image_request
+        failure = None
+        try:
+            return self._prepare(messages,tools,kwargs,max_new,force,req,cancel,image_request)
+        except BaseException as error:
+            failure = error
+            if image_request is not None:
+                image_request.finished = True
+                for action in (lambda:image_request.emit("prepare_failure",error_type=type(error).__name__),self.drop_embeddings):
+                    try:action()
+                    except BaseException as secondary:error.add_note("Image failure cleanup: "+type(secondary).__name__)
+            raise
+        finally:
+            if image_request is not None:
+                try:image_request.release_prepare()
+                except BaseException as secondary:
+                    if failure is None:raise
+                    failure.add_note("Image pin cleanup: "+type(secondary).__name__)
+
+    def _prepare(self, messages, tools, kwargs, max_new=None, force=None, req=None, cancel=None, image_request=None):
         """-> (ids, thinking, max_new). An unset or non-positive max_new (some clients send -1) means "unlimited":
         the rest of the context.  `force` (forced_call): without thinking the reply starts with it, so it ends the
         prompt; with thinking, Service.run writes it once the thinking is over."""
         # `cancel` (#1999): set when the client hangs up; the downloads, the wait for the turn and the encodes stop
         # between pictures and raise ClientGone
-        fetched = self._note_unreadable_tool_images(messages, cancel)
+        hip_images = getattr(self.vision, "hip_required", False) is True
+        fetched = self._note_unreadable_tool_images(messages, cancel, image_request)
         ids = encoded_ids = self.encode_prompt(messages, tools, kwargs)
         if force and kwargs.get("enable_thinking", True) is False:
             ids = ids + self.tok.encode(force, parse_special=True)
@@ -3977,8 +4405,12 @@ class Service:
             def fetch(src):
                 if cancel is not None and cancel.is_set():
                     raise ClientGone()
-                return fetched[src] if src in fetched else Vision.download(src) \
-                    if src.startswith(("http://", "https://")) else src
+                if src in fetched:
+                    return fetched[src]
+                if image_request is not None:return image_request.load(src)
+                if src.startswith(("http://", "https://")):
+                    return Vision.download(src, 20 << 20) if hip_images else Vision.download(src)
+                return src
             images = [fetch(src) for src in images]
             # Encode only while the engine is idle: the engine and the image encoder (a separate process) must not
             # run on the GPU at the same time - an encode during a running request left that request stuck at
@@ -3987,7 +4419,12 @@ class Service:
             with self._turn(cancel):
                 self._vision_up()
                 try:
-                    encoded = (self.vision.encode_all(images, cancel) if hasattr(self.vision, "encode_all")
+                    occurrences = ([image_request.indices[id(item)] for message in messages
+                                    for item in (message.get("content") if isinstance(message.get("content"),list) else [])
+                                    if isinstance(item,dict) and item.get("type")=="image"]
+                                   if image_request else None)
+                    encoded = (self.vision.encode_all(images, cancel, request=image_request, occurrences=occurrences)
+                               if image_request is not None else self.vision.encode_all(images, cancel) if hasattr(self.vision, "encode_all")
                                else [self.vision.encode(src) for src in images])
                 finally:
                     self.last_image_at = time.time()
@@ -4002,6 +4439,7 @@ class Service:
                     if k == len(encoded):
                         raise ValueError("the prompt and its images do not match")
                     out += [pad] * encoded[k][1]
+                    if image_request is not None:image_request.rows[occurrences[k]].update(pad_start=len(out)-encoded[k][1],pad_count=encoded[k][1])
                     k += 1
                 elif t == pad:
                     out += literal
@@ -4049,6 +4487,12 @@ class Service:
             # (an encoder restart, the cache's eviction) with other bits still matches its checkpoints
             self.embeddings.keys = [Path(p).stem[:16] for p, _ in encoded]
             write_temporary(combined, [p for p, _ in encoded])
+            if image_request is not None:
+                image_request.check()
+                image_request.emit("prepared", source_bytes=image_request.source_bytes,
+                    feature_bytes=image_request.feature_bytes, images=image_request.rows,
+                    combined_sha256=hashlib.sha256(combined.read_bytes()).hexdigest(),
+                    mrope_evidence="SVE order/grid and pad ranges; native position formula is source evidence")
         if req is not None and req.get("strata_prefix") is not None:
             req["strata_prefix"] = self.resolve_prefix(req["strata_prefix"], messages, tools, kwargs, ids, bool(images))
         return ids, kwargs.get("enable_thinking", True) is not False, max_new
@@ -4131,9 +4575,16 @@ class Service:
         """Delete the combined image file prepare() wrote when no run() took it over (a run deletes its own as it
         ends): a request can end before its answer starts - its client gone, anything raised after prepare() - and
         then nothing else would.  The handler calls this when a request is done."""
-        path, self.embeddings.path = getattr(self.embeddings, "path", None), None
+        image_request = getattr(self.embeddings, "image_request", None)
+        if image_request is not None and not image_request.finished:
+            image_request.emit("request_end", native_started=image_request.native_started)
+            image_request.finished = True
+        if getattr(self.vision,"cleanup_pending",False):return
+        path = getattr(self.embeddings, "path", None)
         if path is not None:
             Path(path).unlink(missing_ok=True)
+        self.embeddings.path = None
+        self.embeddings.image_request = None
 
     def _note(self, n, evs, st=None, rate=None):
         with self.status_lock:
@@ -4179,9 +4630,20 @@ class Service:
         ka = self.keep_awake
         if ka is not None:
             ka.acquire()
+        image_request = getattr(self.embeddings, "image_request", None)
+        if image_request is not None:
+            image_request.emit("run_started")
         try:
             yield from self._run(ids, thinking, tools, max_new, sampling, cancel, force)
+        except BaseException as error:
+            if image_request is not None:
+                try:image_request.emit("native_failure",error_type=type(error).__name__)
+                except BaseException as secondary:error.add_note("Image audit: "+type(secondary).__name__)
+            raise
+        else:
+            if image_request is not None:image_request.emit("native_returned")
         finally:
+            if image_request is not None:image_request.finished = True
             if ka is not None:
                 ka.release()
 
@@ -4336,6 +4798,10 @@ class Service:
                     while True:
                         segment_before = getattr(self.engine, "last", None)
                         segments_before = len(segments)     # (#879: a pass sent again leaves no segment)
+                        image_request = getattr(self.embeddings,"image_request",None)
+                        if image_request is not None and not image_request.native_started:
+                            image_request.native_started = True
+                            image_request.emit("native_start")
                         gen = self.engine.generate(prompt, max_new - n, sampling, cancel, embeddings=emb) if emb \
                             else self.engine.generate(prompt, max_new - n, sampling, cancel)
                         recover_prompt = None
@@ -4569,6 +5035,7 @@ class Service:
                                 if last.get("offloaded") is not None and routed else None
                             seen = prompt_tokens_seen(len(ids), last)   # #471: < len(ids) when cancelled mid-read
                             self.history.append({
+                                "image_request_id": image_request.id if (image_request := getattr(self.embeddings,"image_request",None)) else None,
                                 "projection": (sampling or {}).get("experimental_speed_projection") is not False
                                 if loaded else None,
                                 "time": started, "duration_s": round(time.time() - started, 1), "finish": finish,
@@ -5186,6 +5653,8 @@ def make_handler(svc: Service):
         def _body(self) -> bytes:
             self.body_read = True
             limit = body_limit()
+            if getattr(svc.vision, "hip_required", False) is True:
+                limit = min(limit, 32 << 20)
             if self._chunked():
                 return self._read_chunked(limit)
             try:
@@ -5459,7 +5928,7 @@ def make_handler(svc: Service):
                 self.wfile.write(body)
             elif path in ("/health", "/api/health"):
                 self._json(200, {"status": "ok", "max_context": svc.reported_ctx(), "model": svc.model,
-                                 "images": svc.vision is not None, "api_key": bool(svc.api_key),
+                                 "images": vision_capability(svc.vision)["available"], "api_key": bool(svc.api_key),
                                  "image_generation": svc.images is not None,
                                  "loaded": svc.loaded(), "service": "strata"})
             elif path.startswith("/v1/images/files/"):
@@ -5494,7 +5963,7 @@ def make_handler(svc: Service):
                     loaded = svc.loaded()
                     model = {"id": svc.model, "object": "model", "status": {"value": "loaded"},
                              "meta": {"n_ctx": svc.reported_ctx()},
-                             "architecture": {"input_modalities": ["text", "image"] if svc.vision is not None else ["text"],
+                             "architecture": {"input_modalities": ["text", "image"] if vision_capability(svc.vision)["available"] else ["text"],
                                               "output_modalities": ["text"]}}
                     if not loaded and (svc.idle_unload_s or getattr(svc.engine, "unloaded", False)):
                         model["status"] = {"value": "unloaded"}   # like llama-server's router: listed, loads on use
@@ -5575,7 +6044,7 @@ def make_handler(svc: Service):
                 try:
                     svc.load()
                     self._json(200, {"status": "loaded"})
-                except GpuBusy as e:
+                except (GpuBusy, VisionCleanupPending) as e:
                     ra = getattr(e, "retry_after", None)
                     self._json(503, {"error": {"type": "server_error", "message": str(e)}},
                                headers={"Retry-After": int(ra)} if ra else None)
@@ -5745,7 +6214,7 @@ def make_handler(svc: Service):
                      "total_slots": max(1, int(getattr(svc.engine, "batch", 0) or 0)),   # #1004: the batch slots
                      "model_alias": svc.model, "chat_template": svc.template.source,
                      "chat_template_caps": svc.template.caps,
-                     "modalities": {"vision": svc.vision is not None}, "models_autoload": hasattr(svc.engine, "restart"),
+                     "modalities": {"vision": vision_capability(svc.vision)["available"]}, "models_autoload": hasattr(svc.engine, "restart"),
                      "is_sleeping": not svc.loaded()}
             if getattr(svc.engine, "model_path", None):
                 props["model_path"] = svc.engine.model_path
