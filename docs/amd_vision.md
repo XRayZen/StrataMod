@@ -1,8 +1,11 @@
 # amdVision — opt-in Windows HIP images
 
-The standard setup currently leaves HIP image support off on Windows. Use
-[`hip_windows.py`](../tools/vision/hip_windows.py) explicitly; this does not
-change the text engine or make the local ownership adapter a general installer.
+Official v0.2.0-beta setup enables pictures by default and chooses its CPU or GPU
+reader by VRAM, with an explicit mode choice and automatic GPU-to-CPU fallback.
+This guide describes the separate private SDK diagnostic path. Use
+[`hip_windows.py`](../tools/vision/hip_windows.py) explicitly for that opt-in path;
+it does not replace the official picture defaults, change the text engine or
+make the local ownership adapter a general installer.
 
 Use an x64 Visual Studio developer shell (MSVC 19.43 or newer, CMake and Ninja).
 Obtain an isolated **ROCm 10.1.0** SDK for your supported GPU from
@@ -52,7 +55,10 @@ installation authority; creating this JSON does not activate that authority.
 The `amdVision` feature uses canonical `amd_vision` directories under
 `serve/stratamod` and `tools/vision`. The old Python imports and build CLI remain
 compatible. `server.Vision` retains the shared encoder owner, cache and lifecycle;
-AMD validation, stop policy, capability and image checks delegate to feature helpers.
+AMD validation, capability and image checks delegate to feature helpers. The
+shared stop helper retains every reader's original process until exit is proved,
+including the official CPU fallback; pending cleanup blocks another spawn and
+keeps the temporary files until retrying cleanup succeeds.
 The common native encoder retains ENC/SVE/mRoPE and model handling. AMD device,
 graph and loaded-module diagnostics have their own internal translation unit.
 

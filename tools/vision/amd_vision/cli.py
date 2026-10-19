@@ -49,7 +49,7 @@ def sdk_root(value: Path) -> Path:
 def configure_command(rocm: Path, llama: Path, build: Path, arch: str) -> list[str]:
     return ["cmake", "-G", "Ninja", "-S", str(ROOT / "tools" / "vision"), "-B", str(build),
             "-DCMAKE_BUILD_TYPE=Release", f"-DLLAMA_DIR={llama.as_posix()}",
-            "-DSTRATA_VISION_HIP=ON", "-DSTRATA_VISION_CUDA=OFF", "-DGGML_STATIC=OFF",
+            "-DSTRATA_VISION_HIP=ON", f"-DSTRATA_VISION_HIP_ARCHS={arch}", "-DSTRATA_VISION_CUDA=OFF", "-DGGML_STATIC=OFF",
             "-DSTRATA_PORTABLE=ON", f"-DGPU_TARGETS={arch}", f"-DAMDGPU_TARGETS={arch}",
             f"-DCMAKE_C_COMPILER={rocm.as_posix()}/lib/llvm/bin/clang.exe",
             f"-DCMAKE_CXX_COMPILER={rocm.as_posix()}/lib/llvm/bin/clang++.exe",
@@ -111,7 +111,7 @@ def build_encoder(a) -> None:
     compiler = subprocess.check_output([str(rocm / "lib/llvm/bin/clang++.exe"), "--version"], env=env, text=True)
     subprocess.run(cmd, check=True, env=env)
     subprocess.run(compile_cmd, check=True, env=env)
-    built = build / "bin" / "strata-vision.exe"
+    built = build / "bin" / EXE
     # The SDK uses the MSVC runtime. Add only missing redistributables, never replace SDK DLLs.
     crt_dirs = sorted((Path(os.environ["VCToolsRedistDir"]) / "x64").glob("Microsoft.VC*.CRT"))
     if not crt_dirs:
