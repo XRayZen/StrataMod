@@ -176,10 +176,25 @@ def ready(n,state,cfg,value,monitor,observation):
             if not Path(found[0]['path']).is_relative_to(RUNTIME):raise RuntimeError('Release DLL loaded outside sidecar')
     raw=Path(cfg['log']).read_text(encoding='utf-8',errors='replace')
     if 'GPU 0: AMD Radeon AI PRO R9700 (gfx1201)' not in raw:raise RuntimeError('Release text R9700/gfx1201 not confirmed')
+    # The signed reader's quiet_log consumes INFO Device lines for its own
+    # architecture check, but only emits WARN+. Bind the actual reader through
+    # its signed DLLs, exact native argv and the same one-card mask as text.
+    from serve.server import hip_visible,vision_env
+    if (cfg.get('backend')!='hip' or cfg['vision'].get('reader_mode')!='official-bundle'
+            or cfg['vision'].get('gpu') is not True or hip_visible(cfg)!=[1]
+            or vision_env(cfg,dict(HIP_VISIBLE_DEVICES='1')).get('HIP_VISIBLE_DEVICES')!='1'):
+        raise RuntimeError('Official reader/text physical HIP mask binding changed')
+    for row in (native,live[0]):n.require_child_command(cfg,row['exe'],row.get('argv',[]))
+    reported=re.findall(r'\bDevice (\d+): ([^\r\n]+)',raw)
+    if backend=='hip' and any(index!='0' or not re.search(r'\bR9700, gfx1201\b',name) for index,name in reported):
+        raise RuntimeError('Official reader supplemental device line contradicts R9700 binding')
     devices=[line for line in raw.splitlines() if re.search(r'Device 0: .*R9700, gfx1201\b',line)]
-    if backend=='hip' and len(devices)!=1:raise RuntimeError('Official image HIP logical-0 R9700/gfx1201 identity unconfirmed')
     windows=n.gpu_observation.windows_displays();adapter=n.gpu_observation.select_adapter(windows,n.gpu_observation.dxgi_adapters())
     state.update(phase='ready',loader=dict(text=text,image=modules,reader_backend=backend,windows=windows,adapter=adapter,
                  build=m.read_json(RUNTIME/'BUILD.json'),reader_device_lines=devices,
-                 device_binding='same signed ROCm runtime + shared text HIP mask 1 => logical 0; reader device line + OS PCI identity',
+                 reader_binding=dict(kind='signed-official-reader-mask-binding',physical_hip_ordinal=1,
+                     logical_ordinal=0 if backend=='hip' else None,selected_alive_backend=backend,
+                     device_stdout='supplementary lines present' if devices else 'INFO Device lines suppressed by official quiet_log',
+                     graph_observation='not available in signed official reader'),
+                 device_binding='same signed ROCm runtime + exact reader argv + shared text HIP mask 1 => logical 0 R9700/gfx1201 + OS PCI identity; CPU fallback separately identified',
                  private_trace='not available in official reader'))

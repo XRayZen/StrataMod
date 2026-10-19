@@ -10,6 +10,40 @@ from serve.server import Vision, vision_env
 
 
 class OfficialReader(unittest.TestCase):
+    def test_quiet_reader_identity_and_reject_wrong_mask_or_native_argv(self):
+        from unittest.mock import Mock
+        from local_runtime import release_revision as r
+        for backend,mutation in (('hip',None),('cpu',None),('hip','mask'),('hip','argv'),('hip','device')):
+            with self.subTest(backend=backend,mutation=mutation),tempfile.TemporaryDirectory() as td:
+                root=Path(td);cfg=dict(exe=str(root/'strata.exe'),backend='hip',gpu=0,hip_ordinal=1,args=[],
+                    log=str(root/'engine.log'),vision=self.config())
+                cfg['vision'].update(exe=str(root/'strata-vision-hip.exe'),cpu_exe=str(root/'strata-vision.exe'))
+                raw='GPU 0: AMD Radeon AI PRO R9700 (gfx1201)\nstrata-vision: warmed up at 289 image tokens in 1.2 s\n'
+                # A supplementary line cannot excuse wrong mask/argv.
+                if mutation:raw+=('  Device 0: wrong GPU, gfx1100\n' if mutation=='device' else '  Device 0: AMD Radeon AI PRO R9700, gfx1201\n')
+                Path(cfg['log']).write_text(raw,encoding='utf-8')
+                chosen=cfg['vision']['exe'] if backend=='hip' else cfg['vision']['cpu_exe']
+                commands=n.expected_child_commands(cfg)
+                identities=[dict(exe=cfg['exe'],argv=commands[str(Path(cfg['exe']).resolve())]),
+                            dict(exe=chosen,argv=commands[str(Path(chosen).resolve())])]
+                if mutation=='mask':cfg['hip_ordinal']=0
+                if mutation=='argv':identities[1]['argv']=identities[1]['argv']+['--require-hip']
+                dlls=[dict(path=str(root/name),sha256='signed') for name in ('amdhip64_7.dll','hipblas.dll','rocblas.dll')]
+                assets={row['path']:dict(sha256='signed') for row in dlls};state={}
+                with patch.object(r,'RUNTIME',root),patch.object(n.safety,'get_json',return_value=dict(vision=dict(available=True,backend=backend,cleanup_pending=False,error=None))),\
+                     patch.object(n.safety,'process_identity_status'),patch.object(n.safety,'require_identity',return_value=object()),\
+                     patch.object(n.gpu_observation,'loaded_modules',return_value=dlls),patch.object(n.gpu_observation,'bind_module_hashes'),\
+                     patch.object(m,'CRITICAL_DLLS',('amdhip64_7.dll',)),patch.object(n.gpu_observation,'windows_displays',return_value=[]),\
+                     patch.object(n.gpu_observation,'dxgi_adapters',return_value=[]),patch.object(n.gpu_observation,'select_adapter',return_value=dict(name='R9700')),\
+                     patch.object(m,'read_json',return_value={}):
+                    if mutation:
+                        with self.assertRaises(RuntimeError):r.ready(n,state,cfg,dict(assets=assets),Mock(),dict(identities=identities))
+                    else:
+                        r.ready(n,state,cfg,dict(assets=assets),Mock(),dict(identities=identities))
+                        self.assertEqual(state['loader']['reader_backend'],backend)
+                        self.assertEqual(state['loader']['reader_device_lines'],[])
+                        self.assertEqual(state['loader']['reader_binding']['graph_observation'],'not available in signed official reader')
+
     def test_public_service_status_health_models_props_and_ready_gate_use_actual_reader(self):
         import json,urllib.request
         from unittest.mock import Mock
