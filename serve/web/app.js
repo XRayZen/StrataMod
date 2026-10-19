@@ -298,6 +298,10 @@ function renderMonitor(live, hw, st, eng, h, last, requests, totals, kept) {
             hw.gpu_pcie_rx_mb == null ? "" : `to GPU ${fmt(hw.gpu_pcie_rx_mb, hw.gpu_pcie_rx_mb < 10 ? 1 : 0)} MB/s` +
             (hw.gpu_pcie_gen && gen && hw.gpu_pcie_gen < gen ? ` · idle Gen${hw.gpu_pcie_gen}` : ""));
   spark("sp-pcie", h.gpu_pcie_rx_mb);
+  // StrataMod: Windows AMD has no power or PCIe-link counter; the server lists the readings it cannot fill
+  const missing = st.gpu_missing || [];
+  if (missing.includes("power")) $("ms-power").textContent = "Windows AMD: no reading";
+  if (missing.includes("pcie")) $("ms-pcie").textContent = "Windows AMD: no counter";
   setMetric("cpu", hw.cpu == null ? null : fmt(hw.cpu), "%", st.threads ? `${st.cores ? `${st.cores} cores · ` : ""}${st.threads} threads` : "");
   spark("sp-cpu", h.cpu, 100);
   if (hw.disk_read_mb == null) {
