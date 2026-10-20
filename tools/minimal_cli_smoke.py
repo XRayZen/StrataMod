@@ -21,6 +21,7 @@ from portable_monitor_smoke import _server
 
 
 ROOT = Path(__file__).resolve().parents[1]
+SERVER_PACKAGES = ("jinja2", "yaml", "regex", "psutil", "requests", "numpy", "PIL")
 
 
 def _run(*args: str) -> subprocess.CompletedProcess[str]:
@@ -44,15 +45,38 @@ def _record(result: subprocess.CompletedProcess[str], expected_exit: int) -> dic
     return value
 
 
+def _preflight_record(result: subprocess.CompletedProcess[str], missing: tuple[str, ...],
+                      interpreter: str) -> dict:
+    if not missing or tuple(name for name in SERVER_PACKAGES if name in missing) != missing:
+        raise RuntimeError("no-site probe did not establish known missing server packages")
+    expected = (
+        f"strata: the interpreter {interpreter} is missing packages the API server needs: {', '.join(missing)}.\n"
+        "        Starting and serving never install anything. Use the Strata terminal archive (it carries them),\n"
+        "        or install them yourself: python -m pip install -r requirements.txt\n"
+        "        (status, monitor, timeskip and tune plan do not need them)\n")
+    if result.returncode != 5 or result.stdout or result.stderr != expected:
+        raise RuntimeError("entry did not return the exact actionable server dependency refusal")
+    return {"exit_code": 5, "missing_packages": list(missing),
+            "interpreter": interpreter, "auto_install": False}
+
+
 def smoke() -> dict:
     probe = _run("-c", "import importlib.util,json,sys; print(json.dumps({"
                  "'no_site':sys.flags.no_site,'rich':importlib.util.find_spec('rich') is not None,"
-                 "'textual':importlib.util.find_spec('textual') is not None}))")
+                 "'textual':importlib.util.find_spec('textual') is not None,"
+                 f"'server_packages':{{name:importlib.util.find_spec(name) is not None for name in {SERVER_PACKAGES!r}}},"
+                 "'interpreter':sys.executable}))")
     if probe.returncode or probe.stderr.strip():
         raise RuntimeError("could not establish the no-site-packages test environment")
     extras = json.loads(probe.stdout)
-    if extras != {"no_site": 1, "rich": False, "textual": False}:
+    if ({name: extras.get(name) for name in ("no_site", "rich", "textual")} !=
+            {"no_site": 1, "rich": False, "textual": False}):
         raise RuntimeError("optional terminal packages are visible in the test environment")
+    visible = extras.get("server_packages", {})
+    if (set(visible) != set(SERVER_PACKAGES) or any(type(v) is not bool for v in visible.values())
+            or extras.get("interpreter") != sys.executable):
+        raise RuntimeError("server package probe did not describe this no-site interpreter")
+    missing_packages = tuple(name for name in SERVER_PACKAGES if not visible[name])
 
     help_result = _run(str(ROOT / "strata.py"), "--help")
     if (help_result.returncode or help_result.stderr.strip() or
@@ -81,7 +105,13 @@ def smoke() -> dict:
 
     with tempfile.TemporaryDirectory(prefix="strata-minimal-cli-") as directory:
         missing = str(Path(directory) / "missing-config.json")
-        serve = _record(_run(str(ROOT / "strata.py"), "serve", "--profile", missing,
+        preflight = _preflight_record(
+            _run(str(ROOT / "strata.py"), "serve", "--profile", missing,
+                 "--offline", "--output", "jsonl"), missing_packages, extras["interpreter"])
+        # Exercise the stdlib dispatcher's early JSON failure independently of
+        # the source entry's API-package preflight, without importing a server.
+        serve = _record(_run("-c", "from strata_cli.cli import main; raise SystemExit(main())",
+                             "serve", "--profile", missing,
                              "--offline", "--output", "jsonl"), 5)
         if (serve.get("event") != "failed" or serve.get("exit_code") != 5 or
                 "cannot read run config" not in (serve.get("error") or {}).get("message", "")):
@@ -97,8 +127,10 @@ def smoke() -> dict:
     return {"schema_version": 1, "scope": "source_cli_without_site_packages",
             "platform": platform.platform(), "python": platform.python_version(),
             "optional_packages_visible": {"rich": False, "textual": False},
+            "server_preflight": preflight,
             "commands": ["--help", "status --json", "monitor --once --output json",
-                         "serve --offline --output jsonl (missing config)",
+                         "source entry serve (missing server packages)",
+                         "lower dispatcher serve --offline --output jsonl (missing config)",
                          "code run --output jsonl (missing harness)"],
             "telemetry_gets": len(paths), "non_gets": 0,
             "actual_engine_started": False, "passed": True}
