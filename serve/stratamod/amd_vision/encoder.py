@@ -17,7 +17,7 @@ def max_tokens(cfg: dict, hip_required: bool) -> int:
 
 def capability(self) -> dict:
     available = self.alive()
-    return {"enabled": True, "available": available, "backend": "hip" if self.hip_required else "legacy",
+    return {"enabled": True, "available": available, "backend": getattr(self, "reader_backend", None) or ("hip" if self.hip_required else "legacy"),
             "error": None if available else self.error or "the image encoder is not running",
             "cleanup_pending": self.cleanup_pending}
 

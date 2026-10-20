@@ -5,6 +5,10 @@ This fork starts from official Strata v0.1.45, commit
 branch. Small contributions to upstream should start from the current upstream
 `main`, with only the required changes and their dependencies.
 
+The integration candidate includes official **v0.2.0-beta**, peeled commit
+`3d1fb48090e8f2cefc22d7b5845fb7f5b71f33fa` (engine **0.1.45.3**).
+Official v0.2.0-beta is integrated; machine-specific deployment and validation status is recorded separately.
+
 ## Changes kept here
 
 - An opt-in Windows HIP image encoder, its environment isolation, device and
@@ -13,6 +17,8 @@ branch. Small contributions to upstream should start from the current upstream
   and image history use the existing ordered SVE records and mRoPE path; the
   temporary HIP-only one-image rejection is removed.
 - Optional lifecycle callbacks for the local calibration/ownership adapter.
+- Windows token defaults retain child birth/record queries for the same user,
+  SYSTEM and Administrators; owner-only file and directory ACLs stay unchanged.
 - The Windows `local_runtime` adapter and its CPU tests. Its experiment memory
   policy and finite diagnostic output/retry settings do not become normal
   Strata settings. The official setup entry remains available.
@@ -44,9 +50,13 @@ more manual porting work during upstream updates.
 
 ## Opt-in Windows HIP image encoder
 
-The standard Windows setup still leaves HIP images off. See the public
-[amdVision build → probe → config guide](amd_vision.md). SDKs, models and native
-binaries remain external dependencies. The existing helper and flags are unchanged.
+The official setup enables pictures by default and chooses CPU or GPU according
+to VRAM, while retaining the explicit picture-mode choice and GPU-to-CPU fallback.
+The separate [amdVision build → probe → config guide](amd_vision.md) is an opt-in
+private SDK and strict diagnostic path. Its flags do not replace the official
+reader defaults. SDKs, models and native binaries remain external dependencies.
+The helper now supplies the official HIP architecture setting and copies the
+official `strata-vision-hip` output name.
 
 ## Local installation and evidence
 
@@ -84,6 +94,11 @@ separately. Unchanged large assets inherit their original full hashes only while
 their metadata still matches. Explicit full verification remains available;
 historical receipts are never rewritten, and preparation does not activate a
 profile. This local authority mechanism is not a general-purpose installer.
+
+The release candidate expands the finite source inventory to the official
+`strata_control` and `strata_cli` modules and native reader build inputs. Existing
+receipts cannot authorize those changed sources or a newly built executable;
+reviewed native revision preparation and normal activation remain separate work.
 
 ## Upstream overlap and validation
 

@@ -25,3 +25,26 @@ inside their separately approved authorization.
 
 CPU fixtures use test-owned process/path/transport stubs. Model, image, SDK and
 real-GPU results remain separate. See [maintenance notes](../docs/STRATAMOD.md).
+
+The optional `release_revision` reader binds the official 0.1.45.3 signed
+Windows HIP bundle in a private versioned `runtimes` directory. It preserves the
+saved normal profile values and supports the official GPU reader with its CPU
+fallback; status reports the actual image backend. Historical private HIP
+diagnostic receipts keep their original strict SDK/argument contract.
+New bundle and Python dependencies receive full hashes. Unchanged model hashes
+are inherited only after matching the saved no-reparse size/mtime proof.
+
+The finite `release_trial` entry is separate from normal selection. Its approved
+five arms change only two performance flags and a common trial-only prompt
+cache of zero. Quantitative requests use the fixed 128-token fixture and a
+120-second disconnect watchdog. Normal requests retain their existing output,
+thinking and retry defaults. Performance adoption remains a separate decision.
+
+The optional `normal_performance_revision` adapter records an explicitly
+approved saved adoption of `STRATA_HIP_WMMA=1` and `STRATA_PF_FUSED=1`. Its
+version 2 receipts bind a clean release-descended commit and the exact runtime
+source inventory, while preserving every other saved profile value. The
+ordinary engine defaults stay unchanged. Installation paths, parent proof and
+selected receipt belong in ignored private data, not published source. Legacy
+receipts keep their validators; moving an existing private installation to a
+new source version requires a matching receipt before ordinary launch.

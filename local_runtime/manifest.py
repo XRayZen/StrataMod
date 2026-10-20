@@ -83,7 +83,8 @@ def normalized_environment(config,inherited):
     env.update(SystemRoot=str(windows),WINDIR=str(windows),COMSPEC=str(windows/'System32/cmd.exe'),
                PATHEXT='.COM;.EXE;.BAT;.CMD',
                PATH=os.pathsep.join(str(path) for path in (PYTHON.parent,windows/'System32',windows)),
-               HIP_PATH=str(ORIGINAL/'engine/rocm'),ROCM_PATH=str(ORIGINAL/'engine/rocm'),
+               HIP_PATH=str(Path(config['exe']).parent/'rocm') if config.get('vision',{}).get('reader_mode')=='official-bundle' else str(ORIGINAL/'engine/rocm'),
+               ROCM_PATH=str(Path(config['exe']).parent/'rocm') if config.get('vision',{}).get('reader_mode')=='official-bundle' else str(ORIGINAL/'engine/rocm'),
                PYTHONUTF8='1',PYTHONDONTWRITEBYTECODE='1',PYTHONNOUSERSITE='1',PYTHONSAFEPATH='1',
                PYTHONUNBUFFERED='1',PYTHONIOENCODING='utf-8',__PYVENV_LAUNCHER__=str(VENV_PYTHON))
     temporary = str(Path(config['log']).parent/'tmp')
@@ -175,7 +176,7 @@ def expected_config(arm, directory, base, suite='smoke',*,probe=None):
 
 
 def source_files():
-    files = [ROOT/'setup.py',ROOT/'tools/strata_mcp.py',ROOT/'tools/strata_tokenizer.py',
+    files = [ROOT/'setup.py',ROOT/'tools/strata_mcp.py',ROOT/'tools/strata_tokenizer.py',ROOT/'tools/calibrate.py',
              ROOT/'serve/chat_template.jinja',*sorted((ROOT/'serve').glob('*.py')),
              *sorted(LOCAL.glob('*.py'))]
     files.extend(ROOT/name for name in ('tools/vision/hip_windows.py','tools/gguf_reader.py','tools/vision/encode_io.py',
@@ -183,6 +184,19 @@ def source_files():
     # Explicit extension roots only: never recurse into private records/data.
     for relative in ('serve/stratamod', 'serve/stratamod/amd_vision', 'tools/vision/amd_vision'):
         files.extend(sorted((ROOT/relative).glob('*.py')))
+    # The release server imports these official packages. Bind their finite source
+    # roots as well; a changed/missing inventory must invalidate an old receipt.
+    for relative in ('strata_control', 'strata_cli', 'strata_cli/launch'):
+        directory = ROOT/relative
+        files.append(directory/'__init__.py')
+        files.extend(sorted(directory.glob('*.py')))
+    files.append(ROOT/'strata_control/update_keys.json')
+    # Native revisions must cover the actual reader compilation inputs, including
+    # the official architecture/header helpers and the opt-in Mod diagnostics.
+    files.append(ROOT/'tools/vision/CMakeLists.txt')
+    for relative in ('tools/vision', 'tools/vision/amd_vision'):
+        for extension in ('*.cpp', '*.h'):
+            files.extend(sorted((ROOT/relative).glob(extension)))
     return {str(path):digest(path) for path in files}
 
 

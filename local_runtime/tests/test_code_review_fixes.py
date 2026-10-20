@@ -11,7 +11,7 @@ from local_runtime import manifest,evaluate_r9700 as runner
 class CodeReviewFixTests(unittest.TestCase):
     def test_tokenizer_edit_is_rejected_by_semantic_source_verifier(self):
         value = dict(root=str(manifest.ROOT),arm='baseline',suite='smoke',memory_budget=manifest.BUDGET,
-                     source_files=manifest.source_files())
+                     source_files=manifest.source_files(),source_revision=manifest.git_revision())
         tokenizer = manifest.ROOT/'tools/strata_tokenizer.py'
         digest = manifest.digest
         with patch.object(manifest,'digest',side_effect=lambda path:'changed' if Path(path) == tokenizer else digest(path)):
@@ -38,6 +38,7 @@ class CodeReviewFixTests(unittest.TestCase):
             for path in paths:
                 path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(b'small dependency sentinel')
             value=dict(root=str(manifest.ROOT),arm='baseline',suite='smoke',source_files=manifest.source_files(),
+                       source_revision=manifest.git_revision(),
                        config=str(config),base_profile_sha256=manifest.digest(profile),
                        environment=manifest.normalized_environment(cfg,os.environ),memory_budget=manifest.BUDGET,
                        dependencies={str(path):manifest.digest(path) for path in paths})
