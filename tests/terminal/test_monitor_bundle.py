@@ -32,6 +32,10 @@ SPEC.loader.exec_module(BUILDER_MODULE)
 SMOKE_SPEC = importlib.util.spec_from_file_location("portable_smoke_fixture", ROOT / "tools/portable_monitor_smoke.py")
 SMOKE = importlib.util.module_from_spec(SMOKE_SPEC)
 SMOKE_SPEC.loader.exec_module(SMOKE)
+PTY_SPEC = importlib.util.spec_from_file_location("portable_pty_fixture", ROOT / "tools/portable_monitor_pty_smoke.py")
+PTY = importlib.util.module_from_spec(PTY_SPEC)
+with mock.patch.dict(sys.modules, {"portable_monitor_smoke": SMOKE}):
+    PTY_SPEC.loader.exec_module(PTY)
 build = BUILDER_MODULE.build
 install = BUILDER_MODULE.install
 uninstall = BUILDER_MODULE.uninstall
@@ -42,6 +46,70 @@ verify = BUILDER_MODULE.verify
 
 
 class MonitorBundleTests(unittest.TestCase):
+    def test_pty_smoke_accepts_case_metrics_and_preserves_alive_probe(self):
+        def fake_case(bundle, url, paths, key):
+            start = len(paths)
+            for endpoint in ("/v1/telemetry", "/metrics"):
+                with urllib.request.urlopen(url + endpoint, timeout=2) as response:
+                    self.assertEqual(response.status, 200)
+            return {"key": "q" if key == b"q" else "ctrl-c", "exit_code": 0,
+                    "terminal_went_raw": True, "terminal_restored": True,
+                    "operations": list(paths[start:]), "telemetry_gets": 1,
+                    "metrics_gets": 1, "http_gets": 2}
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = Path(directory) / "monitor.pyz"; bundle.write_bytes(b"fixture only")
+            with mock.patch.object(PTY, "_case", side_effect=fake_case):
+                report = PTY.smoke(bundle)
+            self.assertTrue(report["server_alive_after_detach"])
+            self.assertEqual(report["http_gets"], 5)
+            self.assertEqual([c["operations"] for c in report["cases"]],
+                             [["GET /v1/telemetry", "GET /metrics"]] * 2)
+
+    def test_pty_counts_require_both_known_gets_and_reject_unknown_or_nonget(self):
+        good = ["GET /v1/telemetry", "GET /metrics", "GET /v1/telemetry"]
+        self.assertEqual(PTY._http_counts(good), {"operations": good,
+                         "telemetry_gets": 2, "metrics_gets": 1, "http_gets": 3})
+        for operations in ([], ["GET /metrics"], ["GET /v1/telemetry"],
+                           good + ["GET /unknown"], good + ["POST /metrics"]):
+            with self.subTest(operations=operations), self.assertRaises(RuntimeError):
+                PTY._http_counts(operations)
+
+    def test_pty_key_readiness_uses_only_current_case_both_gets(self):
+        prior = ["GET /v1/telemetry", "GET /metrics"]
+        self.assertFalse(PTY._case_http_ready(prior, len(prior)))
+        self.assertFalse(PTY._case_http_ready(prior + ["GET /v1/telemetry"], len(prior)))
+        self.assertTrue(PTY._case_http_ready(prior + prior, len(prior)))
+        with self.assertRaises(RuntimeError):
+            PTY._case_http_ready(prior + ["DELETE /metrics"], len(prior))
+
+    def test_pty_http_report_separates_cases_from_single_alive_probe(self):
+        first = ["GET /metrics", "GET /v1/telemetry"]
+        second = ["GET /v1/telemetry", "GET /metrics", "GET /metrics"]
+        cases = [dict(key="q", **PTY._http_counts(first)),
+                 dict(key="ctrl-c", **PTY._http_counts(second))]
+        alive = ["GET /v1/telemetry"]
+        report = PTY._http_report(cases, alive, first + second + alive, True)
+        self.assertEqual((report["http_gets"], report["telemetry_gets"], report["metrics_gets"]), (6, 3, 3))
+        self.assertEqual(report["alive_probe_operations"], alive)
+        self.assertEqual(report["operations"], first + second + alive)
+        bad_counts = copy.deepcopy(cases); bad_counts[1]["telemetry_gets"] += 1
+        for value in (bad_counts, list(reversed(cases))):
+            with self.assertRaises(RuntimeError):
+                PTY._http_report(value, alive, first + second + alive, True)
+
+    def test_pty_http_report_refuses_alive_mixing_missing_extra_and_server_failure(self):
+        ops = ["GET /v1/telemetry", "GET /metrics"]
+        cases = [dict(key=key, **PTY._http_counts(ops)) for key in ("q", "ctrl-c")]
+        alive = ["GET /v1/telemetry"]
+        for probe, whole, live in (([], ops * 2, True),
+                                   (alive * 2, ops * 2 + alive * 2, True),
+                                   (["GET /metrics"], ops * 2 + ["GET /metrics"], True),
+                                   (alive, ops * 2 + alive + ["GET /metrics"], True),
+                                   (alive, ops + alive, True),
+                                   (alive, ops * 2 + alive, False)):
+            with self.subTest(probe=probe, whole=whole, live=live), self.assertRaises(RuntimeError):
+                PTY._http_report(cases, probe, whole, live)
+
     def test_smoke_operations_distinguish_primary_and_interactive_metrics(self):
         primary = ["GET /v1/telemetry"] * 3
         self.assertEqual(SMOKE._operations(primary, interactive=False)["metrics_gets"], 0)

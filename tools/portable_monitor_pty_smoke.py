@@ -9,17 +9,14 @@ does not qualify a physical terminal, Windows console or inference engine.
 from __future__ import annotations
 
 import argparse
-import fcntl
 import hashlib
 import json
 import os
 import platform
-import pty
 import select
 import struct
 import subprocess
 import sys
-import termios
 import threading
 import time
 import urllib.request
@@ -28,7 +25,46 @@ from pathlib import Path
 from portable_monitor_smoke import _server
 
 
+def _http_counts(operations: list[str], *, require_both: bool = True) -> dict:
+    operations = list(operations)
+    if any(op not in ("GET /v1/telemetry", "GET /metrics") for op in operations):
+        raise RuntimeError(f"Unexpected PTY HTTP operations: {operations!r}")
+    telemetry = operations.count("GET /v1/telemetry")
+    metrics = operations.count("GET /metrics")
+    if require_both and (not telemetry or not metrics):
+        raise RuntimeError(f"PTY case lacks telemetry or metrics: {operations!r}")
+    return {"operations": operations, "telemetry_gets": telemetry,
+            "metrics_gets": metrics, "http_gets": len(operations)}
+
+
+def _case_http_ready(paths: list[str], start: int) -> bool:
+    counts = _http_counts(paths[start:], require_both=False)
+    return bool(counts["telemetry_gets"] and counts["metrics_gets"])
+
+
+def _http_report(cases: list[dict], alive_operations: list[str],
+                 operations: list[str], server_alive: bool) -> dict:
+    if [case["key"] for case in cases] != ["q", "ctrl-c"]:
+        raise RuntimeError(f"Unexpected PTY cases: {cases!r}")
+    case_operations = []
+    for case in cases:
+        counts = _http_counts(case["operations"])
+        if any(case.get(key) != counts[key] for key in counts):
+            raise RuntimeError(f"PTY case HTTP counts disagree: {case!r}")
+        case_operations.extend(counts["operations"])
+    if not server_alive or alive_operations != ["GET /v1/telemetry"] or \
+            operations != case_operations + alive_operations:
+        raise RuntimeError(f"PTY HTTP boundary/server mismatch: cases={cases!r}, "
+                           f"alive={alive_operations!r}, all={operations!r}, server_alive={server_alive}")
+    return {**_http_counts(operations), "alive_probe_operations": list(alive_operations),
+            "other_http_methods": 0}
+
+
 def _case(bundle: Path, url: str, paths: list[str], key: bytes) -> dict:
+    import fcntl
+    import pty
+    import termios
+
     master, slave = pty.openpty()
     process = None
     before_count = len(paths)
@@ -57,7 +93,7 @@ def _case(bundle: Path, url: str, paths: list[str], key: bytes) -> dict:
                 output.extend(chunk)
                 if len(output) > 65536:
                     del output[:-65536]
-            if not sent and len(paths) > before_count and b"STRATA" in output:
+            if not sent and _case_http_ready(paths, before_count) and b"STRATA" in output:
                 active = termios.tcgetattr(slave)
                 active_raw = not bool(active[3] & termios.ICANON) and not bool(active[3] & termios.ECHO)
                 if active_raw:
@@ -71,10 +107,11 @@ def _case(bundle: Path, url: str, paths: list[str], key: bytes) -> dict:
         restored = termios.tcgetattr(slave) == before
         if exit_code != 0 or not sent or not active_raw or not restored:
             raise RuntimeError(f"PTY detach failed: key={key!r}, exit={exit_code}, "
-                               f"sent={sent}, raw={active_raw}, restored={restored}")
+                               f"sent={sent}, raw={active_raw}, restored={restored}, "
+                               f"operations={paths[before_count:]!r}")
         return {"key": "ctrl-c" if key == b"\x03" else "q", "exit_code": exit_code,
                 "terminal_went_raw": active_raw, "terminal_restored": restored,
-                "telemetry_gets": len(paths) - before_count, "terminal_output_bytes": bytes_read}
+                **_http_counts(paths[before_count:]), "terminal_output_bytes": bytes_read}
     finally:
         if process is not None and process.poll() is None:
             process.kill()
@@ -88,22 +125,30 @@ def smoke(bundle: Path) -> dict:
     server, paths, _ = _server()
     worker = threading.Thread(target=server.serve_forever, daemon=True)
     worker.start()
+    cases = []
+    alive_operations = []
+    server_alive = False
     try:
         url = f"http://127.0.0.1:{server.server_port}"
-        cases = [_case(bundle, url, paths, key) for key in (b"q", b"\x03")]
+        for key in (b"q", b"\x03"):
+            cases.append(_case(bundle, url, paths, key))
+        alive_start = len(paths)
         with urllib.request.urlopen(url + "/v1/telemetry", timeout=3) as response:
             server_alive = response.status == 200
+        alive_operations = list(paths[alive_start:])
+        http = _http_report(cases, alive_operations, list(paths), server_alive)
+    except Exception as error:
+        raise RuntimeError(f"PTY smoke failed: cases={cases!r}, operations={paths!r}, "
+                           f"alive={alive_operations!r}, server_alive={server_alive}: {error}") from error
     finally:
         server.shutdown()
         server.server_close()
         worker.join(timeout=3)
-    if not server_alive or any(path != "GET /v1/telemetry" for path in paths):
-        raise RuntimeError("Monitor detach changed or stopped the telemetry server")
     return {"schema_version": 1, "scope": "portable_monitor_posix_pty_smoke",
             "bundle_sha256": hashlib.sha256(bundle.read_bytes()).hexdigest(),
             "python": platform.python_version(), "platform": platform.platform(),
             "cases": cases, "server_alive_after_detach": True,
-            "http_gets": len(paths), "other_http_methods": 0, "passed": True}
+            **http, "passed": True}
 
 
 def main() -> int:
