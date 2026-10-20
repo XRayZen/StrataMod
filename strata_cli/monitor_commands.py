@@ -33,8 +33,10 @@ def add_status(sp: argparse._SubParsersAction) -> None:
     status.add_argument("--quiet", action="store_true", help="suppress human informational output")
 
 
-def add_monitor(sp: argparse._SubParsersAction) -> None:
-    monitor = sp.add_parser("monitor", help="read-only terminal monitor: seven views (Overview ... Logs, Connect), the same as the one strata launch opens")
+def add_monitor(sp: argparse._SubParsersAction, *, portable: bool = False) -> None:
+    description = ("read-only terminal monitor: six views (Overview ... Logs)" if portable else
+                   "read-only terminal monitor: seven views (Overview ... Logs, Connect), the same as the one strata launch opens")
+    monitor = sp.add_parser("monitor", help=description)
     _connection(monitor)
     monitor.add_argument("--once", action="store_true", help="print one snapshot without starting the TUI")
     monitor.add_argument("--output", choices=("human", "json"), default="human")
@@ -90,11 +92,11 @@ def add_connections(sp: argparse._SubParsersAction) -> None:
     effective.add_argument("--quiet", action="store_true", help="suppress human informational output")
 
 
-def parser() -> argparse.ArgumentParser:
+def parser(*, portable: bool = False) -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="strata-monitor", description="Read-only Strata serving client")
     sp = ap.add_subparsers(dest="command", required=True)
     add_status(sp)
-    add_monitor(sp)
+    add_monitor(sp, portable=portable)
     add_logs(sp)
     add_connections(sp)
     return ap
@@ -143,7 +145,7 @@ def _local_command(a: argparse.Namespace, machine: bool) -> int:
     return 0
 
 
-def run(a: argparse.Namespace) -> int:
+def run(a: argparse.Namespace, *, portable: bool = False) -> int:
     machine = a.output in ("json", "jsonl") or getattr(a, "json", False)
     quiet = bool(getattr(a, "quiet", False) and not machine)
     try:
@@ -190,9 +192,16 @@ def run(a: argparse.Namespace) -> int:
                 print(render_view(snapshot, "overview", width=80, height=24))
             return 0
         try:
-            from strata_cli.launch.monitor_ext import LaunchMonitor
+            if portable:
+                from strata_cli.monitor import MonitorApp
+            else:
+                from strata_cli.launch.monitor_ext import LaunchMonitor
         except ImportError:
             return _error("monitor component missing; install the optional terminal UI dependency", 5, machine)
+        if portable:
+            MonitorApp(endpoint, None, interval=a.interval, requests=a.requests,
+                       theme=a.theme, color=a.color, glyphs=a.glyphs).run()
+            return 0
         # the one monitor, with the same seven views as the one `strata launch` opens (Connect is key 7 and works against this --url
         # server); q just detaches here: nothing was started by this command, so there is nothing to stop
         LaunchMonitor(endpoint, None, info={"url": endpoint.base_url, "urls": [endpoint.base_url], "key": endpoint.credential or "", "model": "",
@@ -215,5 +224,5 @@ def run(a: argparse.Namespace) -> int:
         return _error("interrupted; operation completion may be unknown", 130, machine)
 
 
-def main(argv: list[str] | None = None) -> int:
-    return run(parser().parse_args(argv))
+def main(argv: list[str] | None = None, *, portable: bool = False) -> int:
+    return run(parser(portable=portable).parse_args(argv), portable=portable)

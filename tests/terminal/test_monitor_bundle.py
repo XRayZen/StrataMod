@@ -1,6 +1,8 @@
 """Packaged client smoke test without site packages, engine files or model weights."""
 
 import io
+import ast
+import copy
 import hashlib
 import importlib.util
 import json
@@ -35,6 +37,119 @@ verify = BUILDER_MODULE.verify
 
 
 class MonitorBundleTests(unittest.TestCase):
+    def test_schema6_readonly_closure_is_zip_local_and_compiles_without_site(self):
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = Path(directory) / "monitor.pyz"
+            report = build(bundle)
+            self.assertEqual(report["schema_version"], 6)
+            self.assertIn("strata_cli/consoleinfo.py", report["files"])
+            self.assertIn("strata_cli/overview.py", report["files"])
+            program = ("import sys,json,zipfile; sys.path.insert(0,sys.argv[1]); "
+                       "from strata_cli import consoleinfo; "
+                       "z=zipfile.ZipFile(sys.argv[1]); "
+                       "[compile(z.read(n),n,'exec') for n in z.namelist() if n.endswith('.py')]; "
+                       "print(json.dumps({'origin':consoleinfo.__file__,'compiled':True}))")
+            result = subprocess.run([sys.executable, "-I", "-X", "utf8", "-S", "-c", program, str(bundle)],
+                                    cwd=directory, capture_output=True, text=True, check=True)
+            value = json.loads(result.stdout)
+            self.assertTrue(value["compiled"])
+            self.assertTrue(value["origin"].replace("\\", "/").startswith(str(bundle).replace("\\", "/") + "/"))
+
+    def test_thin_bootstrap_explicitly_selects_portable_route(self):
+        selected = mock.Mock(return_value=0)
+        module = mock.Mock(main=selected)
+        with mock.patch.dict(sys.modules, {"strata_cli.monitor_commands": module}), self.assertRaises(SystemExit):
+            exec(compile(BUILDER_MODULE.BOOTSTRAP, "__main__.py", "exec"), {})
+        selected.assert_called_once_with(portable=True)
+
+    def test_schema_four_and_five_exact_members_update_and_rollback(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); modern = root / "modern.pyz"; built = build(modern)
+            for version, members in ((4, BUILDER_MODULE.MEMBERS_V4), (5, BUILDER_MODULE.MEMBERS_V5)):
+                with self.subTest(version=version):
+                    old = root / f"v{version}.pyz"
+                    with zipfile.ZipFile(modern) as source, zipfile.ZipFile(old, "w") as archive:
+                        archive.writestr("strata_cli/", b"")
+                        for name in members:
+                            content = (b"from strata_cli.monitor_commands import main\nraise SystemExit(main())\n"
+                                       if name == "__main__.py" else source.read(name))
+                            archive.writestr(name, content)
+                    report = dict(built, schema_version=version, bundle=old.name,
+                                  sha256=hashlib.sha256(old.read_bytes()).hexdigest())
+                    with zipfile.ZipFile(old) as archive:
+                        report["files"] = {name: hashlib.sha256(archive.read(name)).hexdigest() for name in members}
+                    old.with_name(old.name + ".manifest.json").write_text(json.dumps(report))
+                    self.assertEqual(verify(old)["schema_version"], version)
+                    self.assertNotIn("strata_cli/consoleinfo.py", report["files"])
+                    self.assertNotIn("strata_cli/overview.py", report["files"])
+                    target = root / f"installed-v{version}"
+                    install(old, target, if_candidate_sha256=report["sha256"])
+                    update(modern, target, if_current_sha256=report["sha256"], if_candidate_sha256=built["sha256"])
+                    self.assertEqual(verify(target / modern.name)["schema_version"], 6)
+                    rollback(target, if_active_sha256=built["sha256"], if_rollback_sha256=report["sha256"])
+                    self.assertEqual(verify(target / old.name)["schema_version"], version)
+
+    def test_schema6_member_missing_extra_duplicate_or_tampered_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); original = root / "original.pyz"; built = build(original)
+            with zipfile.ZipFile(original) as archive:
+                contents = {name: archive.read(name) for name in archive.namelist()}
+            for kind in ("missing", "extra", "duplicate", "tampered", "old-schema", "unknown-schema"):
+                with self.subTest(kind=kind):
+                    bundle = root / (kind + ".pyz"); entries = dict(contents)
+                    if kind == "missing": del entries["strata_cli/consoleinfo.py"]
+                    if kind == "extra": entries["strata_cli/unknown.py"] = b"pass\n"
+                    if kind == "tampered": entries["strata_cli/overview.py"] += b"\n# changed\n"
+                    with zipfile.ZipFile(bundle, "w") as archive:
+                        for name, content in entries.items(): archive.writestr(name, content)
+                        if kind == "duplicate":
+                            with self.assertWarns(UserWarning):
+                                archive.writestr("strata_cli/consoleinfo.py", entries["strata_cli/consoleinfo.py"])
+                    report = dict(built, bundle=bundle.name, sha256=hashlib.sha256(bundle.read_bytes()).hexdigest())
+                    if kind == "old-schema": report["schema_version"] = 5
+                    if kind == "unknown-schema": report["schema_version"] = 7
+                    bundle.with_name(bundle.name + ".manifest.json").write_text(json.dumps(report))
+                    with self.assertRaises(ValueError): verify(bundle)
+
+    def test_portable_help_leaves_source_seven_views_unchanged(self):
+        from strata_cli import monitor_commands as commands
+        source_help = commands.parser().format_help()
+        portable_help = commands.parser(portable=True).format_help()
+        self.assertIn("seven views", source_help)
+        self.assertIn("Connect", source_help)
+        self.assertIn("six views", portable_help)
+        self.assertNotIn("Connect", portable_help)
+
+    def test_portable_and_source_interactive_routes_stay_separate(self):
+        from strata_cli import monitor_commands as commands
+        # Validate the real constructor signature without importing optional
+        # Textual or running any console/font setup in this stdlib fixture.
+        tree = ast.parse((ROOT / "strata_cli/monitor.py").read_text(encoding="utf-8"))
+        app = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "MonitorApp")
+        constructor = copy.deepcopy(next(node for node in app.body if isinstance(node, ast.FunctionDef) and node.name == "__init__"))
+        constructor.name = "readonly_constructor"; constructor.args.args.pop(0)
+        constructor.body = [ast.Pass()]; constructor.decorator_list = []; constructor.returns = None
+        for node in ast.walk(constructor):
+            if isinstance(node, ast.arg): node.annotation = None
+        namespace = {}
+        exec(compile(ast.fix_missing_locations(ast.Module(body=[constructor], type_ignores=[])), "constructor-signature", "exec"), namespace)
+        endpoint = {"url": "http://127.0.0.1:1", "credential_env": "TEST_UNUSED_KEY",
+                    "timeout_s": 3, "prefix": ""}
+        for portable in (False, True):
+            with self.subTest(portable=portable):
+                readonly = mock.create_autospec(namespace["readonly_constructor"], return_value=mock.Mock())
+                launch = mock.Mock()
+                with mock.patch.dict(sys.modules, {"strata_cli.monitor": mock.Mock(MonitorApp=readonly),
+                                                   "strata_cli.launch.monitor_ext": mock.Mock(LaunchMonitor=launch)}), \
+                        mock.patch.object(commands.connections, "resolve", return_value=endpoint), \
+                        mock.patch.object(sys.stdout, "isatty", return_value=True):
+                    args = ["monitor", "--url", endpoint["url"]]
+                    self.assertEqual(commands.main(args, portable=True) if portable else commands.main(args), 0)
+                chosen, unused = (readonly, launch) if portable else (launch, readonly)
+                chosen.return_value.run.assert_called_once_with()
+                unused.assert_not_called()
+                if portable: self.assertIsNone(chosen.call_args.args[1])
+
     @staticmethod
     def _candidate(source: Path, destination: Path) -> Path:
         destination.parent.mkdir()
@@ -65,7 +180,7 @@ class MonitorBundleTests(unittest.TestCase):
                 build(bundle)
             with zipfile.ZipFile(bundle) as archive:
                 self.assertIn(b"MIT License\r\n", archive.read("LICENSE"))
-            self.assertEqual(verify(bundle)["schema_version"], 5)
+            self.assertEqual(verify(bundle)["schema_version"], 6)
 
     def test_update_rollback_and_commit_keep_one_verified_previous_copy(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -219,7 +334,7 @@ class MonitorBundleTests(unittest.TestCase):
             if os.name == "posix":
                 self.assertEqual(target.stat().st_mode & 0o077, 0)
                 self.assertEqual((target / bundle.name).stat().st_mode & 0o077, 0)
-            portable = subprocess.run([sys.executable, "-I", str(target / bundle.name), "logs", "--help"],
+            portable = subprocess.run([sys.executable, "-I", "-X", "utf8", str(target / bundle.name), "logs", "--help"],
                                       cwd=directory, capture_output=True, text=True, check=True)
             self.assertIn("--follow", portable.stdout)
             extra = target / "user-notes.txt"
@@ -262,10 +377,6 @@ class MonitorBundleTests(unittest.TestCase):
             root = Path(directory)
             bundle = root / "monitor.pyz"
             build(bundle)
-            linked = root / "linked.pyz"
-            linked.symlink_to(bundle)
-            with self.assertRaisesRegex(ValueError, "bounded regular"):
-                verify(linked)
             with bundle.open("ab") as stream:
                 stream.write(b"x" * (1024 * 1024))
             with self.assertRaisesRegex(ValueError, "bounded regular"):
@@ -282,6 +393,27 @@ class MonitorBundleTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "manifest or SHA-256"):
                 verify(bundle)
 
+    def test_actual_symlink_input_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); bundle = root / "monitor.pyz"; build(bundle)
+            linked = root / "linked.pyz"
+            try:
+                linked.symlink_to(bundle)
+            except OSError as error:
+                if os.name == "nt" and getattr(error, "winerror", None) == 1314:
+                    self.skipTest("Windows symlink creation privilege is unavailable; actual link not tested")
+                raise
+            with self.assertRaisesRegex(ValueError, "bounded regular"):
+                verify(linked)
+
+    def test_nonregular_input_is_rejected_without_symlink_privilege(self):
+        from types import SimpleNamespace
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = Path(directory) / "monitor.pyz"; build(bundle)
+            with mock.patch.object(Path, "lstat", return_value=SimpleNamespace(st_mode=0o120777)):
+                with self.assertRaisesRegex(ValueError, "bounded regular"):
+                    verify(bundle)
+
     def test_versioned_manifest_keeps_legacy_update_and_rollback_available(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -293,7 +425,7 @@ class MonitorBundleTests(unittest.TestCase):
             for old_bundle, version in ((current, 1), (previous, 2), (old_visual, 3)):
                 with zipfile.ZipFile(modern) as source, zipfile.ZipFile(old_bundle, "w", zipfile.ZIP_DEFLATED) as legacy:
                     for item in source.infolist():
-                        if item.filename not in ("strata_cli/detail_dashboard.py", "strata_cli/nav.py") and \
+                        if item.filename not in ("strata_cli/detail_dashboard.py", "strata_cli/nav.py", "strata_cli/consoleinfo.py", "strata_cli/overview.py") and \
                                 (version >= 3 or item.filename != "strata_cli/dashboard.py") and \
                                 (version != 1 or item.filename != "LICENSE"):
                             legacy.writestr(item, source.read(item.filename))
@@ -303,6 +435,8 @@ class MonitorBundleTests(unittest.TestCase):
                 report["sha256"] = hashlib.sha256(old_bundle.read_bytes()).hexdigest()
                 del report["files"]["strata_cli/detail_dashboard.py"]
                 del report["files"]["strata_cli/nav.py"]
+                del report["files"]["strata_cli/consoleinfo.py"]
+                del report["files"]["strata_cli/overview.py"]
                 if version < 3:
                     del report["files"]["strata_cli/dashboard.py"]
                 if version == 1:
@@ -313,7 +447,7 @@ class MonitorBundleTests(unittest.TestCase):
             self.assertEqual(verify(current)["schema_version"], 1)
             self.assertEqual(verify(previous)["schema_version"], 2)
             self.assertEqual(verify(old_visual)["schema_version"], 3)
-            self.assertEqual(verify(modern)["schema_version"], 5)
+            self.assertEqual(verify(modern)["schema_version"], 6)
             with zipfile.ZipFile(modern) as archive:
                 self.assertIn(b"MIT License", archive.read("LICENSE"))
                 self.assertIn(b"render_dashboard", archive.read("strata_cli/dashboard.py"))
@@ -324,7 +458,7 @@ class MonitorBundleTests(unittest.TestCase):
             self.assertTrue(preview["would_update"])
             self.assertTrue(update(modern, target, if_current_sha256=preview["current_sha256"],
                                    if_candidate_sha256=preview["candidate_sha256"])["updated"])
-            self.assertEqual(verify(target / modern.name)["schema_version"], 5)
+            self.assertEqual(verify(target / modern.name)["schema_version"], 6)
             self.assertEqual(verify(root / "optional-monitor.previous" / current.name)["schema_version"], 1)
             planned = rollback(target, plan=True)
             self.assertTrue(rollback(target, if_active_sha256=planned["active_sha256"],
@@ -336,7 +470,7 @@ class MonitorBundleTests(unittest.TestCase):
             self.assertTrue(update(modern, second_target,
                                    if_current_sha256=preview["current_sha256"],
                                    if_candidate_sha256=preview["candidate_sha256"])["updated"])
-            self.assertEqual(verify(second_target / modern.name)["schema_version"], 5)
+            self.assertEqual(verify(second_target / modern.name)["schema_version"], 6)
             planned = rollback(second_target, plan=True)
             self.assertTrue(rollback(second_target, if_active_sha256=planned["active_sha256"],
                                      if_rollback_sha256=planned["rollback_sha256"])["rolled_back"])
@@ -401,13 +535,13 @@ class MonitorBundleTests(unittest.TestCase):
                                capture_output=True, text=True)
                 subprocess.run([sys.executable, str(BUILDER), "verify", str(bundle)], check=True,
                                capture_output=True, text=True)
-                self.assertLess(bundle.stat().st_size, 64 * 1024)
+                self.assertLessEqual(bundle.stat().st_size, BUILDER_MODULE.MAX_BUNDLE_BYTES)
                 with zipfile.ZipFile(bundle) as archive:
                     self.assertIn(b"MIT License", archive.read("LICENSE"))
                     self.assertIn("strata_cli/dashboard.py", archive.namelist())
                 if importlib.util.find_spec("textual") is not None:
                     import_check = subprocess.run(
-                        [sys.executable, "-I", "-c",
+                        [sys.executable, "-I", "-X", "utf8", "-c",
                          "import sys; sys.path.insert(0, " + repr(str(bundle)) + "); "
                          "from strata_cli.monitor import MonitorApp; print(MonitorApp.__name__)"],
                         cwd=directory, capture_output=True, text=True, check=True)

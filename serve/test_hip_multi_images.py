@@ -181,21 +181,41 @@ class HipMulti(unittest.TestCase):
 
     def test_secondary_cleanup_failure_preserves_original_and_unproven_path(self):
         original=self.service.resolve_prefix
-        def fail(*args,**kwargs):raise ValueError('original prefix failure')
-        self.service.resolve_prefix=fail
         actual_unlink=Path.unlink
-        def refuse_combined(path,*args,**kwargs):
-            if path.name.startswith('req-'):raise PermissionError('combined is still held')
-            return actual_unlink(path,*args,**kwargs)
-        with patch.object(Path,'unlink',new=refuse_combined):
-            with self.assertRaisesRegex(ValueError,'original prefix failure') as caught:
-                self.prepare(self.messages(['2','3']),req={'strata_prefix':{}})
-        self.assertIn('PermissionError',' '.join(caught.exception.__notes__))
-        self.assertTrue(Path(self.service.embeddings.path).exists())
-        self.assertEqual(self.vision.request_pins,{})
-        self.service.resolve_prefix=original
-        self.service.drop_embeddings()
-        self.assertFalse(list(self.vision.dir.glob('req-*.sve')))
+        for name in ('req-test-owned.sve','strata-vision-123-req-test-owned.sve'):
+            with self.subTest(name=name):
+                target=self.vision.dir/name
+                original_error=ValueError('original prefix failure')
+                refused=[]
+                def fail(*args,**kwargs):raise original_error
+                self.service.resolve_prefix=fail
+                def refuse_combined(path,*args,**kwargs):
+                    if path==target:
+                        refused.append(path)
+                        raise PermissionError('combined is still held')
+                    return actual_unlink(path,*args,**kwargs)
+                try:
+                    with patch.object(s,'combined_embeddings_path',return_value=target) as choose, \
+                            patch.object(Path,'unlink',new=refuse_combined):
+                        with self.assertRaisesRegex(ValueError,'original prefix failure') as caught:
+                            self.prepare(self.messages(['2','3']),req={'strata_prefix':{}})
+                    self.assertIs(caught.exception,original_error)
+                    self.assertEqual(refused,[target])
+                    self.assertIn('PermissionError',' '.join(getattr(caught.exception,'__notes__',[])))
+                    self.assertEqual(Path(self.service.embeddings.path),target)
+                    expected=b''.join(self.vision.cache[hashlib.sha256(bytes([int(src)])+b'opaque-synthetic-bytes').hexdigest()[:32]][0].read_bytes()
+                                      for src in ['2','3'])
+                    self.assertEqual(target.read_bytes(),expected)
+                    self.assertEqual(self.vision.request_pins,{})
+                    self.assertEqual(choose.call_count,1)
+                    self.service.resolve_prefix=original
+                    self.service.drop_embeddings()
+                    self.assertFalse(target.exists())
+                    self.assertIsNone(self.service.embeddings.path)
+                finally:
+                    self.service.resolve_prefix=original
+                    actual_unlink(target,missing_ok=True)
+
 
 
 class VisionRequestContracts(unittest.TestCase):
