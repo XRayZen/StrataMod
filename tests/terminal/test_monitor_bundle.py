@@ -12,6 +12,8 @@ import sys
 import tempfile
 import threading
 import unittest
+import urllib.error
+import urllib.request
 import zipfile
 from contextlib import redirect_stdout
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -27,6 +29,9 @@ SPEC = importlib.util.spec_from_file_location("strata_monitor_bundle_builder", B
 assert SPEC is not None and SPEC.loader is not None
 BUILDER_MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(BUILDER_MODULE)
+SMOKE_SPEC = importlib.util.spec_from_file_location("portable_smoke_fixture", ROOT / "tools/portable_monitor_smoke.py")
+SMOKE = importlib.util.module_from_spec(SMOKE_SPEC)
+SMOKE_SPEC.loader.exec_module(SMOKE)
 build = BUILDER_MODULE.build
 install = BUILDER_MODULE.install
 uninstall = BUILDER_MODULE.uninstall
@@ -37,6 +42,79 @@ verify = BUILDER_MODULE.verify
 
 
 class MonitorBundleTests(unittest.TestCase):
+    def test_smoke_operations_distinguish_primary_and_interactive_metrics(self):
+        primary = ["GET /v1/telemetry"] * 3
+        self.assertEqual(SMOKE._operations(primary, interactive=False)["metrics_gets"], 0)
+        result = SMOKE._operations(primary + ["GET /v1/telemetry", "GET /metrics"], interactive=True)
+        self.assertEqual((result["telemetry_gets"], result["metrics_gets"]), (4, 1))
+        self.assertEqual(result["operations"], primary + ["GET /v1/telemetry", "GET /metrics"])
+
+    def test_smoke_operations_reject_missing_metrics_unknown_get_or_nonget(self):
+        primary = ["GET /v1/telemetry"] * 3
+        for paths, interactive in ((primary, True), (primary + ["GET /v1/telemetry"], True),
+                                   (primary + ["GET /metrics"], True),
+                                   (primary + ["GET /v1/telemetry", "GET /other"], True),
+                                   (primary + ["GET /v1/telemetry", "POST /metrics"], True),
+                                   (primary + ["GET /metrics"], False),
+                                   (["GET /metrics"] + primary, True)):
+            with self.subTest(paths=paths, interactive=interactive), self.assertRaises(RuntimeError):
+                SMOKE._operations(paths, interactive=interactive)
+
+    def test_smoke_fixture_metrics_malformed_and_rejected_operations_are_real(self):
+        server, paths, malformed = SMOKE._server()
+        worker = threading.Thread(target=server.serve_forever, daemon=True); worker.start()
+        url = f"http://127.0.0.1:{server.server_port}"
+        try:
+            try:
+                response = urllib.request.urlopen(url + "/metrics", timeout=2)
+            except urllib.error.HTTPError as error:
+                self.assertEqual(error.code, 200, "metrics fixture is missing")
+                raise
+            with response: metrics = json.load(response)
+            self.assertEqual(metrics["engine"]["model"], "portable-smoke-model")
+            self.assertEqual(metrics["live"]["state"], "generating")
+            self.assertEqual(metrics["hardware"]["gpu_util"], 37)
+            for request, code in ((url + "/unknown", 404),
+                                  (urllib.request.Request(url + "/v1/telemetry", data=b"{}"), 405)):
+                with self.assertRaises(urllib.error.HTTPError) as caught:
+                    urllib.request.urlopen(request, timeout=2)
+                self.assertEqual(caught.exception.code, code)
+            malformed.set()
+            with urllib.request.urlopen(url + "/v1/telemetry", timeout=2) as response:
+                body = response.read()
+            with self.assertRaises(json.JSONDecodeError): json.loads(body)
+            self.assertEqual(paths, ["GET /metrics", "GET /unknown", "POST /v1/telemetry", "GET /v1/telemetry"])
+        finally:
+            server.shutdown(); server.server_close(); worker.join(timeout=2)
+
+    def test_smoke_error_record_is_strict(self):
+        message = "server returned malformed JSON telemetry"
+        record = json.dumps({"schema_version": 1, "ok": False, "error": {"code": 3, "message": message}})
+        good = subprocess.CompletedProcess([], 3, record, "")
+        self.assertEqual(SMOKE._error_response(good)["error"]["message"], message)
+        for result in (subprocess.CompletedProcess([], 0, record, ""),
+                       subprocess.CompletedProcess([], 3, record, "Traceback\n"),
+                       subprocess.CompletedProcess([], 3, record + "{}", ""),
+                       subprocess.CompletedProcess([], 3, record.replace('"schema_version": 1', '"schema_version": true'), ""),
+                       subprocess.CompletedProcess([], 3, record.replace('"code": 3', '"code": 4'), ""),
+                       subprocess.CompletedProcess([], 3, record.replace(message, "other failure"), ""),
+                       subprocess.CompletedProcess([], 3, "[]", "")):
+            with self.subTest(result=result), self.assertRaises(RuntimeError):
+                SMOKE._error_response(result)
+
+    def test_deep_valid_array_has_a_bounded_exact_client_error_separate_from_malformed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = Path(directory) / "monitor.pyz"; build(bundle)
+            server, _, bad = SMOKE._server(bad_body=b"[" * 1100 + b"0" + b"]" * 1100)
+            worker = threading.Thread(target=server.serve_forever, daemon=True); worker.start(); bad.set()
+            try:
+                value = SMOKE._malformed_response(bundle, f"http://127.0.0.1:{server.server_port}",
+                    messages=("server returned malformed JSON telemetry", "server returned a non-object telemetry response"))
+                self.assertIn(value["error"]["message"],
+                              ("server returned malformed JSON telemetry", "server returned a non-object telemetry response"))
+            finally:
+                server.shutdown(); server.server_close(); worker.join(timeout=2)
+
     def test_schema6_readonly_closure_is_zip_local_and_compiles_without_site(self):
         with tempfile.TemporaryDirectory() as directory:
             bundle = Path(directory) / "monitor.pyz"

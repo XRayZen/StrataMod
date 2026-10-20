@@ -22,6 +22,12 @@ from pathlib import Path
 
 
 BUILDER = Path(__file__).resolve().parents[1] / "packaging" / "monitor_bundle.py"
+METRICS = {"live": {"state": "generating", "tok_s": 12.5, "generated": 16,
+                    "max_tokens": 128, "prompt_tokens": 64, "queued": 0},
+           "engine": {"model": "portable-smoke-model", "max_context": 4096},
+           "hardware": {"gpu_util": 37, "gpu_mem_used": 2 * 2**30, "gpu_mem_total": 8 * 2**30,
+                        "gpu_temp": 51, "gpu_power": 75, "cpu_pct": 17, "disk_read_mb": 3.5},
+           "hardware_static": {"gpu_name": "Fixture GPU", "cores": 4, "threads": 8}}
 INTERACTIVE_CODE = r'''
 import asyncio
 import io
@@ -46,19 +52,25 @@ async def main():
                      theme="dark", color="never", glyphs="ascii")
     async with app.run_test(size=(110, 30)) as pilot:
         for _ in range(30):
-            if app.connection_state == "connected":
+            if (app.connection_state == "connected" and app.metrics_model is not None
+                    and app.metrics_model.get("state") == "Generating"):
                 break
             await pilot.pause(0.1)
-        if app.connection_state != "connected":
-            raise RuntimeError("interactive Monitor did not connect")
+        model = app.metrics_model
+        if (app.connection_state != "connected" or not model
+                or model.get("model") != "portable-smoke-model" or model.get("state") != "Generating"
+                or model["speed"][0] != 12.5 or model["gpu"]["util"] != 37
+                or model["gpu"]["vram_used"] != 2.0):
+            raise RuntimeError("interactive Monitor did not load the metrics fixture")
+        await pilot.pause()
         output = io.StringIO()
         Console(file=output, width=110, color_system=None).print(
             app.query_one("#content", Static).content)
         shown = output.getvalue()
         if not all(title in shown for title in
-                   ("SERVING", "PERFORMANCE", "BATCHING / PARALLEL",
-                    "HARDWARE", "REQUESTS", "ACTIVITY")):
-            raise RuntimeError("packaged one-screen Overview is incomplete")
+                   ("Model state", "Generating", "Speed", "GPU load", "VRAM", "GPU temp",
+                    "Power", "PCIe", "CPU", "Disk read", "12.5", "37 %", "2.0 / 8 GB")):
+            raise RuntimeError("packaged metrics Overview is incomplete")
         if (app.latest.get("model") or {}).get("id") != "portable-smoke-model":
             raise RuntimeError("interactive Monitor showed the wrong model")
         wide = io.StringIO()
@@ -78,7 +90,7 @@ async def main():
             if title not in detail.getvalue():
                 raise RuntimeError("packaged visual " + view + " page is incomplete")
         await pilot.press("q")
-    print(json.dumps({"connected": True, "overview_panels": 6,
+    print(json.dumps({"connected": True, "metrics_overview_tiles": 8, "metrics_model_state": "Generating",
                       "wide_visual": True, "visual_details": 5,
                       "imported_from_bundle": True, "detached": True}))
 
@@ -87,7 +99,7 @@ asyncio.run(main())
 
 
 def _run(*argv: str) -> dict:
-    result = subprocess.run([sys.executable, "-I", "-S", *argv],
+    result = subprocess.run([sys.executable, "-I", "-S", "-X", "utf8", *argv],
                             capture_output=True, text=True, timeout=20, check=False)
     if result.returncode or result.stderr.strip():
         raise RuntimeError(f"isolated command failed ({result.returncode}): {result.stderr.strip()}")
@@ -97,17 +109,28 @@ def _run(*argv: str) -> dict:
         raise RuntimeError("isolated command did not return one JSON record") from exc
 
 
-def _server() -> tuple[ThreadingHTTPServer, list[str], threading.Event]:
+def _server(*, bad_body: bytes = b'{"unfinished":') -> tuple[ThreadingHTTPServer, list[str], threading.Event]:
     paths: list[str] = []
     malformed = threading.Event()
 
     class TelemetryHandler(BaseHTTPRequestHandler):
         def do_GET(self) -> None:
             paths.append("GET " + self.path)
-            if self.path != "/v1/telemetry":
+            if self.path == "/metrics":
+                body = json.dumps(METRICS).encode()
+            elif self.path == "/v1/telemetry":
+                body = self.telemetry()
+            else:
                 self.send_error(404)
                 return
-            body = json.dumps({
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def telemetry(self) -> bytes:
+            return json.dumps({
                 "schema_version": 1, "sampled_at": time.time(),
                 "instance": {"id": "portable-smoke", "state": "ready"},
                 "model": {"id": "portable-smoke-model", "loaded": True},
@@ -117,12 +140,7 @@ def _server() -> tuple[ThreadingHTTPServer, list[str], threading.Event]:
                 "topology": {"mode": "single", "selected_devices": []},
                 "rates": {"output_tokens_server_counter": 0},
                 "devices": [], "quality": {"telemetry": "available"},
-            }).encode() if not malformed.is_set() else b"[" * 1100 + b"0" + b"]" * 1100
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
+            }).encode() if not malformed.is_set() else bad_body
 
         def _reject(self) -> None:
             paths.append(self.command + " " + self.path)
@@ -136,23 +154,44 @@ def _server() -> tuple[ThreadingHTTPServer, list[str], threading.Event]:
     return ThreadingHTTPServer(("127.0.0.1", 0), TelemetryHandler), paths, malformed
 
 
-def _malformed_response(bundle: Path, url: str) -> None:
-    result = subprocess.run([sys.executable, "-I", "-S", str(bundle),
-                             "status", "--url", url, "--json"],
-                            capture_output=True, text=True, timeout=20, check=False)
+def _error_response(result: subprocess.CompletedProcess[str], *,
+                    messages: tuple[str, ...] = ("server returned malformed JSON telemetry",)) -> dict:
     if result.returncode != 3 or result.stderr:
-        raise RuntimeError("deeply nested telemetry escaped the client error boundary")
+        raise RuntimeError("invalid telemetry escaped the client error boundary")
     try:
         response = json.loads(result.stdout)
     except json.JSONDecodeError as exc:
-        raise RuntimeError("malformed telemetry did not return one JSON error") from exc
-    if (response.get("ok") is not False or
-            (response.get("error") or {}).get("message") != "server returned malformed JSON telemetry"):
-        raise RuntimeError("deeply nested telemetry returned an unexpected error")
+        raise RuntimeError("invalid telemetry did not return one JSON error") from exc
+    if (not isinstance(response, dict) or type(response.get("schema_version")) is not int
+            or response.get("schema_version") != 1
+            or response.get("ok") is not False or not isinstance(response.get("error"), dict)
+            or type(response["error"].get("code")) is not int or response["error"].get("code") != 3
+            or response["error"].get("message") not in messages):
+        raise RuntimeError("invalid telemetry returned an unexpected error")
+    return response
+
+
+def _malformed_response(bundle: Path, url: str, *,
+                        messages: tuple[str, ...] = ("server returned malformed JSON telemetry",)) -> dict:
+    result = subprocess.run([sys.executable, "-I", "-S", "-X", "utf8", str(bundle),
+                             "status", "--url", url, "--json"],
+                            capture_output=True, text=True, timeout=20, check=False)
+    return _error_response(result, messages=messages)
+
+
+def _operations(paths: list[str], *, interactive: bool) -> dict:
+    primary = ["GET /v1/telemetry"] * 3
+    suffix = paths[3:]
+    if (paths[:3] != primary or (not interactive and suffix)
+            or (interactive and ("GET /v1/telemetry" not in suffix or "GET /metrics" not in suffix))
+            or any(path not in ("GET /v1/telemetry", "GET /metrics") for path in suffix)):
+        raise RuntimeError(f"unexpected client HTTP operations: {paths}")
+    return {"operations": list(paths), "telemetry_gets": paths.count("GET /v1/telemetry"),
+            "metrics_gets": paths.count("GET /metrics")}
 
 
 def _interactive(bundle: Path, url: str) -> dict:
-    result = subprocess.run([sys.executable, "-I", "-c", INTERACTIVE_CODE, str(bundle), url],
+    result = subprocess.run([sys.executable, "-I", "-X", "utf8", "-c", INTERACTIVE_CODE, str(bundle), url],
                             capture_output=True, text=True, timeout=20, check=False)
     if result.returncode:
         raise RuntimeError(f"packaged interactive Monitor failed ({result.returncode}): "
@@ -161,7 +200,7 @@ def _interactive(bundle: Path, url: str) -> dict:
         report = json.loads(result.stdout)
     except json.JSONDecodeError as exc:
         raise RuntimeError("interactive Monitor did not return one JSON record") from exc
-    if report != {"connected": True, "overview_panels": 6, "wide_visual": True,
+    if report != {"connected": True, "metrics_overview_tiles": 8, "metrics_model_state": "Generating", "wide_visual": True,
                   "visual_details": 5,
                   "imported_from_bundle": True, "detached": True}:
         raise RuntimeError("packaged interactive Monitor smoke was incomplete")
@@ -216,16 +255,13 @@ def smoke(bundle: Path, *, interactive: bool = False) -> dict:
         server.server_close()
         worker.join(timeout=5)
 
-    if (paths[:2] != ["GET /v1/telemetry", "GET /v1/telemetry"] or
-            any(path != "GET /v1/telemetry" for path in paths) or
-            (interactive and len(paths) < 4) or (not interactive and len(paths) != 3)):
-        raise RuntimeError(f"unexpected client HTTP operations: {paths}")
+    operations = _operations(paths, interactive=interactive)
     report = {"schema_version": 1, "scope": "portable_monitor_stdlib_smoke",
             "bundle_sha256": expected_sha, "python": platform.python_version(),
             "platform": platform.platform(), "isolated_no_site_packages": True,
             "one_shot_monitor": True, "installed_status": True,
             "digest_pinned_install_uninstall": True,
-            "deep_json_error": True,
+            "malformed_json_error": True, **operations,
             "http_gets": len(paths),
             "other_http_methods": 0, "passed": True}
     if interactive_report is not None:
