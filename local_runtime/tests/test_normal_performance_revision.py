@@ -1,7 +1,6 @@
 """Clean saved-adoption contracts; synthetic assets and no native runtime."""
 import contextlib,copy,errno,os,subprocess,tempfile,unittest
 from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import Mock,patch
 from local_runtime import normal_runtime as n,manifest as m,normal_performance_revision as p
 
@@ -11,7 +10,10 @@ class CleanAdoption(unittest.TestCase):
         root=Path(self.enterContext(tempfile.TemporaryDirectory()));home=root/'normal';home.mkdir()
         data=root/'data';data.mkdir();model=data/'model';model.write_bytes(b'anchored model')
         runtime=root/'runtime';runtime.mkdir();binary=runtime/'strata.exe';binary.write_bytes(b'signed binary')
-        component=runtime/'engine-component.json';component.write_bytes(b'signed manifest')
+        component=runtime/'engine-component.json'
+        n.write(component,dict(schema_version=2,id='strata-engine',version='0.1.45.3',
+            platform='windows-x86_64',backend='hip',entrypoint='strata.exe',build_id='synthetic-fixture',
+            archs=['gfx1201'],files=[dict(path='strata.exe',sha256=m.digest(binary),bytes=binary.stat().st_size)]))
         python=root/'python.exe';python.write_bytes(b'python closure')
         full_profile=root/'full-profile.json'
         n.write(full_profile,dict(exe='old.exe',env={},args=['--expert-profile',str(model),'--prompt-cache','6','--max-context','262144'],
@@ -27,7 +29,6 @@ class CleanAdoption(unittest.TestCase):
         self.enterContext(patch.object(p.release,'bundle',return_value=[binary,component]))
         self.enterContext(patch.object(p.release,'python_paths',return_value=[python]))
         from strata_control import engine_component as ec
-        self.enterContext(patch.object(ec,'read_manifest',return_value=SimpleNamespace(files=[('strata.exe',binary.stat().st_size,m.digest(binary))])))
         self.enterContext(patch.object(ec,'MANIFEST',component.name))
         def local(path):
             path=Path(path)
@@ -62,6 +63,14 @@ class CleanAdoption(unittest.TestCase):
         value.update(profile=str(new_profile),profile_sha256=m.digest(new_profile),sources=sources,
                      normal_performance_adoption=dict(version=2,flags=dict(p.FLAGS),source=p.revision(),**copy.deepcopy(descriptor)))
         return root,base,value,descriptor
+
+    def test_real_manifest_tuple_keeps_digest_and_byte_count_in_the_official_order(self):
+        root,base,value,desc=self.fixture()
+        from strata_control import engine_component as ec
+        row=ec.read_manifest(root/'runtime').files[0]
+        self.assertEqual(row,('strata.exe',m.digest(root/'runtime/strata.exe'),len(b'signed binary')))
+        self.assertIsInstance(row[1],str);self.assertIs(type(row[2]),int)
+        self.assertEqual(p.parent(n,desc['release_parent']),base)
 
     def test_clean_v2_dispatch_does_not_apply_legacy_current_source_validator(self):
         root,base,value,desc=self.fixture();path=Path(value['profile']).parent/'receipt.json';n.write(path,value)

@@ -79,7 +79,7 @@ def parent(n,reference):
     # misrepresented as hashes inherited from the older model proof.
     from strata_control import engine_component as ec
     component=ec.read_manifest(release.RUNTIME)
-    expected={str(release.RUNTIME/name):sha for name,_,sha in component.files}
+    expected={str(release.RUNTIME/name):sha for name,sha,_ in component.files}
     expected[str(release.RUNTIME/ec.MANIFEST)]=release.MANIFEST_SHA
     if set(expected)!=component_paths:raise RuntimeError('Signed component inventory changed')
     for name,sha in expected.items():
