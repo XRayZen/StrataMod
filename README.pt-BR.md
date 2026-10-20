@@ -76,15 +76,16 @@ logo abaixo da tabela.
 | **Windows 10 / 11** | NVIDIA RTX, driver 580 ou mais novo | [`Strata-0.2.0-beta-windows-cuda13.exe`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.0-beta-windows-cuda13.exe) |
 | | NVIDIA, placa mais antiga ou driver anterior ao 580 | [`Strata-0.2.0-beta-windows-cuda12.exe`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.0-beta-windows-cuda12.exe) |
 | | AMD Radeon série RX 9000 ou Radeon AI PRO R9700 | [`Strata-0.2.0-beta-windows-hip.exe`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.0-beta-windows-hip.exe) |
+| | AMD Radeon série RX 7000 ou Ryzen AI Max (Strix Halo) | [`Strata-0.2.0-beta-windows-hip-rdna3.exe`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.0-beta-windows-hip-rdna3.exe) |
 | **Linux** | NVIDIA RTX, driver 580 ou mais novo | [`Strata-0.2.0-beta-linux-nvidia-cuda13.AppImage`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.0-beta-linux-nvidia-cuda13.AppImage) |
 | | NVIDIA, placa mais antiga ou driver anterior ao 580 | [`Strata-0.2.0-beta-linux-nvidia-cuda12.AppImage`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.0-beta-linux-nvidia-cuda12.AppImage) |
 | | AMD Radeon série RX 9000 ou Radeon AI PRO R9700 | [`Strata-0.2.0-beta-linux-amd-rx9070.AppImage`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.0-beta-linux-amd-rx9070.AppImage) |
 | | AMD Radeon série RX 7000 | [`Strata-0.2.0-beta-linux-amd-rx7900.AppImage`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.0-beta-linux-amd-rx7900.AppImage) |
+| | AMD Ryzen AI Max (Strix Halo) | [`Strata-0.2.0-beta-linux-amd-strixhalo.AppImage`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.0-beta-linux-amd-strixhalo.AppImage) |
 | **Mac** (Apple Silicon, macOS 15 ou mais novo) | integrada | [`Strata-0.2.0-beta-mac.dmg`](https://github.com/Niko1221/Strata/releases/latest/download/Strata-0.2.0-beta-mac.dmg) |
 
 **Se você estiver em dúvida:** para NVIDIA, use `cuda13` se o seu driver for a versão 580 ou mais nova, e `cuda12` nos outros casos. O `cuda12`
-serve para placas e drivers mais antigos. Os arquivos `hip` e `amd` são para placas AMD. Outras placas AMD (RX 6000, ou RX 7000 no
-Windows) ainda não têm app pronto: veja [Placas AMD](docs/AMD_HIP.md).
+serve para placas e drivers mais antigos. Os arquivos `hip` e `amd` são para placas AMD. Outras placas AMD (RX 6000) ainda não têm app pronto: veja [Placas AMD](docs/AMD_HIP.md).
 
 Depois:
 
@@ -222,10 +223,13 @@ A busca é o único recurso que envia algo para fora do seu PC: os termos da pes
 
 Para rodar dois modelos, ative **Executar vários modelos** e dê a cada modelo a sua própria placa da mesma marca.
 
-<p align="center"><img src="docs/media/runpagoda.png" width="900" alt="The Strata app's Monitor tab next to a coding agent"><br>
-<sub>O <b>Monitor</b> do app Strata (à esquerda) enquanto um agente de programação escreve o jardim de pagodes do vídeo (à direita)</sub></p>
+<p align="center"><img src="docs/media/app-chat.png" width="900" alt="The Strata app: a chat where the agent built a small voxel pagoda garden, with the page open in the preview on the right"><br>
+<sub>Um chat no app Strata: o agente escreveu um pequeno jardim de pagode em voxels em um único arquivo HTML, e a página abre na pré-visualização ao lado da conversa</sub></p>
 
 ### No Terminal
+
+<p align="center"><img src="docs/media/terminal-monitor.png" width="900" alt="The Strata Terminal monitor overview while the model writes a reply"><br>
+<sub><code>strata monitor</code> enquanto o modelo responde: velocidade, GPU, memória e as solicitações recentes</sub></p>
 
 ```sh
 strata launch                                  # telas guiadas: modelo, contexto, imagens, acesso e depois servir

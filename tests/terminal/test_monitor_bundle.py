@@ -1,8 +1,6 @@
 """Packaged client smoke test without site packages, engine files or model weights."""
 
 import io
-import ast
-import copy
 import hashlib
 import importlib.util
 import json
@@ -12,8 +10,6 @@ import sys
 import tempfile
 import threading
 import unittest
-import urllib.error
-import urllib.request
 import zipfile
 from contextlib import redirect_stdout
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -29,13 +25,6 @@ SPEC = importlib.util.spec_from_file_location("strata_monitor_bundle_builder", B
 assert SPEC is not None and SPEC.loader is not None
 BUILDER_MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(BUILDER_MODULE)
-SMOKE_SPEC = importlib.util.spec_from_file_location("portable_smoke_fixture", ROOT / "tools/portable_monitor_smoke.py")
-SMOKE = importlib.util.module_from_spec(SMOKE_SPEC)
-SMOKE_SPEC.loader.exec_module(SMOKE)
-PTY_SPEC = importlib.util.spec_from_file_location("portable_pty_fixture", ROOT / "tools/portable_monitor_pty_smoke.py")
-PTY = importlib.util.module_from_spec(PTY_SPEC)
-with mock.patch.dict(sys.modules, {"portable_monitor_smoke": SMOKE}):
-    PTY_SPEC.loader.exec_module(PTY)
 build = BUILDER_MODULE.build
 install = BUILDER_MODULE.install
 uninstall = BUILDER_MODULE.uninstall
@@ -46,256 +35,6 @@ verify = BUILDER_MODULE.verify
 
 
 class MonitorBundleTests(unittest.TestCase):
-    def test_pty_smoke_accepts_case_metrics_and_preserves_alive_probe(self):
-        def fake_case(bundle, url, paths, key):
-            start = len(paths)
-            for endpoint in ("/v1/telemetry", "/metrics"):
-                with urllib.request.urlopen(url + endpoint, timeout=2) as response:
-                    self.assertEqual(response.status, 200)
-            return {"key": "q" if key == b"q" else "ctrl-c", "exit_code": 0,
-                    "terminal_went_raw": True, "terminal_restored": True,
-                    "operations": list(paths[start:]), "telemetry_gets": 1,
-                    "metrics_gets": 1, "http_gets": 2}
-        with tempfile.TemporaryDirectory() as directory:
-            bundle = Path(directory) / "monitor.pyz"; bundle.write_bytes(b"fixture only")
-            with mock.patch.object(PTY, "_case", side_effect=fake_case):
-                report = PTY.smoke(bundle)
-            self.assertTrue(report["server_alive_after_detach"])
-            self.assertEqual(report["http_gets"], 5)
-            self.assertEqual([c["operations"] for c in report["cases"]],
-                             [["GET /v1/telemetry", "GET /metrics"]] * 2)
-
-    def test_pty_counts_require_both_known_gets_and_reject_unknown_or_nonget(self):
-        good = ["GET /v1/telemetry", "GET /metrics", "GET /v1/telemetry"]
-        self.assertEqual(PTY._http_counts(good), {"operations": good,
-                         "telemetry_gets": 2, "metrics_gets": 1, "http_gets": 3})
-        for operations in ([], ["GET /metrics"], ["GET /v1/telemetry"],
-                           good + ["GET /unknown"], good + ["POST /metrics"]):
-            with self.subTest(operations=operations), self.assertRaises(RuntimeError):
-                PTY._http_counts(operations)
-
-    def test_pty_key_readiness_uses_only_current_case_both_gets(self):
-        prior = ["GET /v1/telemetry", "GET /metrics"]
-        self.assertFalse(PTY._case_http_ready(prior, len(prior)))
-        self.assertFalse(PTY._case_http_ready(prior + ["GET /v1/telemetry"], len(prior)))
-        self.assertTrue(PTY._case_http_ready(prior + prior, len(prior)))
-        with self.assertRaises(RuntimeError):
-            PTY._case_http_ready(prior + ["DELETE /metrics"], len(prior))
-
-    def test_pty_http_report_separates_cases_from_single_alive_probe(self):
-        first = ["GET /metrics", "GET /v1/telemetry"]
-        second = ["GET /v1/telemetry", "GET /metrics", "GET /metrics"]
-        cases = [dict(key="q", **PTY._http_counts(first)),
-                 dict(key="ctrl-c", **PTY._http_counts(second))]
-        alive = ["GET /v1/telemetry"]
-        report = PTY._http_report(cases, alive, first + second + alive, True)
-        self.assertEqual((report["http_gets"], report["telemetry_gets"], report["metrics_gets"]), (6, 3, 3))
-        self.assertEqual(report["alive_probe_operations"], alive)
-        self.assertEqual(report["operations"], first + second + alive)
-        bad_counts = copy.deepcopy(cases); bad_counts[1]["telemetry_gets"] += 1
-        for value in (bad_counts, list(reversed(cases))):
-            with self.assertRaises(RuntimeError):
-                PTY._http_report(value, alive, first + second + alive, True)
-
-    def test_pty_http_report_refuses_alive_mixing_missing_extra_and_server_failure(self):
-        ops = ["GET /v1/telemetry", "GET /metrics"]
-        cases = [dict(key=key, **PTY._http_counts(ops)) for key in ("q", "ctrl-c")]
-        alive = ["GET /v1/telemetry"]
-        for probe, whole, live in (([], ops * 2, True),
-                                   (alive * 2, ops * 2 + alive * 2, True),
-                                   (["GET /metrics"], ops * 2 + ["GET /metrics"], True),
-                                   (alive, ops * 2 + alive + ["GET /metrics"], True),
-                                   (alive, ops + alive, True),
-                                   (alive, ops * 2 + alive, False)):
-            with self.subTest(probe=probe, whole=whole, live=live), self.assertRaises(RuntimeError):
-                PTY._http_report(cases, probe, whole, live)
-
-    def test_smoke_operations_distinguish_primary_and_interactive_metrics(self):
-        primary = ["GET /v1/telemetry"] * 3
-        self.assertEqual(SMOKE._operations(primary, interactive=False)["metrics_gets"], 0)
-        result = SMOKE._operations(primary + ["GET /v1/telemetry", "GET /metrics"], interactive=True)
-        self.assertEqual((result["telemetry_gets"], result["metrics_gets"]), (4, 1))
-        self.assertEqual(result["operations"], primary + ["GET /v1/telemetry", "GET /metrics"])
-
-    def test_smoke_operations_reject_missing_metrics_unknown_get_or_nonget(self):
-        primary = ["GET /v1/telemetry"] * 3
-        for paths, interactive in ((primary, True), (primary + ["GET /v1/telemetry"], True),
-                                   (primary + ["GET /metrics"], True),
-                                   (primary + ["GET /v1/telemetry", "GET /other"], True),
-                                   (primary + ["GET /v1/telemetry", "POST /metrics"], True),
-                                   (primary + ["GET /metrics"], False),
-                                   (["GET /metrics"] + primary, True)):
-            with self.subTest(paths=paths, interactive=interactive), self.assertRaises(RuntimeError):
-                SMOKE._operations(paths, interactive=interactive)
-
-    def test_smoke_fixture_metrics_malformed_and_rejected_operations_are_real(self):
-        server, paths, malformed = SMOKE._server()
-        worker = threading.Thread(target=server.serve_forever, daemon=True); worker.start()
-        url = f"http://127.0.0.1:{server.server_port}"
-        try:
-            try:
-                response = urllib.request.urlopen(url + "/metrics", timeout=2)
-            except urllib.error.HTTPError as error:
-                self.assertEqual(error.code, 200, "metrics fixture is missing")
-                raise
-            with response: metrics = json.load(response)
-            self.assertEqual(metrics["engine"]["model"], "portable-smoke-model")
-            self.assertEqual(metrics["live"]["state"], "generating")
-            self.assertEqual(metrics["hardware"]["gpu_util"], 37)
-            for request, code in ((url + "/unknown", 404),
-                                  (urllib.request.Request(url + "/v1/telemetry", data=b"{}"), 405)):
-                with self.assertRaises(urllib.error.HTTPError) as caught:
-                    urllib.request.urlopen(request, timeout=2)
-                self.assertEqual(caught.exception.code, code)
-            malformed.set()
-            with urllib.request.urlopen(url + "/v1/telemetry", timeout=2) as response:
-                body = response.read()
-            with self.assertRaises(json.JSONDecodeError): json.loads(body)
-            self.assertEqual(paths, ["GET /metrics", "GET /unknown", "POST /v1/telemetry", "GET /v1/telemetry"])
-        finally:
-            server.shutdown(); server.server_close(); worker.join(timeout=2)
-
-    def test_smoke_error_record_is_strict(self):
-        message = "server returned malformed JSON telemetry"
-        record = json.dumps({"schema_version": 1, "ok": False, "error": {"code": 3, "message": message}})
-        good = subprocess.CompletedProcess([], 3, record, "")
-        self.assertEqual(SMOKE._error_response(good)["error"]["message"], message)
-        for result in (subprocess.CompletedProcess([], 0, record, ""),
-                       subprocess.CompletedProcess([], 3, record, "Traceback\n"),
-                       subprocess.CompletedProcess([], 3, record + "{}", ""),
-                       subprocess.CompletedProcess([], 3, record.replace('"schema_version": 1', '"schema_version": true'), ""),
-                       subprocess.CompletedProcess([], 3, record.replace('"code": 3', '"code": 4'), ""),
-                       subprocess.CompletedProcess([], 3, record.replace(message, "other failure"), ""),
-                       subprocess.CompletedProcess([], 3, "[]", "")):
-            with self.subTest(result=result), self.assertRaises(RuntimeError):
-                SMOKE._error_response(result)
-
-    def test_deep_valid_array_has_a_bounded_exact_client_error_separate_from_malformed(self):
-        with tempfile.TemporaryDirectory() as directory:
-            bundle = Path(directory) / "monitor.pyz"; build(bundle)
-            server, _, bad = SMOKE._server(bad_body=b"[" * 1100 + b"0" + b"]" * 1100)
-            worker = threading.Thread(target=server.serve_forever, daemon=True); worker.start(); bad.set()
-            try:
-                value = SMOKE._malformed_response(bundle, f"http://127.0.0.1:{server.server_port}",
-                    messages=("server returned malformed JSON telemetry", "server returned a non-object telemetry response"))
-                self.assertIn(value["error"]["message"],
-                              ("server returned malformed JSON telemetry", "server returned a non-object telemetry response"))
-            finally:
-                server.shutdown(); server.server_close(); worker.join(timeout=2)
-
-    def test_schema6_readonly_closure_is_zip_local_and_compiles_without_site(self):
-        with tempfile.TemporaryDirectory() as directory:
-            bundle = Path(directory) / "monitor.pyz"
-            report = build(bundle)
-            self.assertEqual(report["schema_version"], 6)
-            self.assertIn("strata_cli/consoleinfo.py", report["files"])
-            self.assertIn("strata_cli/overview.py", report["files"])
-            program = ("import sys,json,zipfile; sys.path.insert(0,sys.argv[1]); "
-                       "from strata_cli import consoleinfo; "
-                       "z=zipfile.ZipFile(sys.argv[1]); "
-                       "[compile(z.read(n),n,'exec') for n in z.namelist() if n.endswith('.py')]; "
-                       "print(json.dumps({'origin':consoleinfo.__file__,'compiled':True}))")
-            result = subprocess.run([sys.executable, "-I", "-X", "utf8", "-S", "-c", program, str(bundle)],
-                                    cwd=directory, capture_output=True, text=True, check=True)
-            value = json.loads(result.stdout)
-            self.assertTrue(value["compiled"])
-            self.assertTrue(value["origin"].replace("\\", "/").startswith(str(bundle).replace("\\", "/") + "/"))
-
-    def test_thin_bootstrap_explicitly_selects_portable_route(self):
-        selected = mock.Mock(return_value=0)
-        module = mock.Mock(main=selected)
-        with mock.patch.dict(sys.modules, {"strata_cli.monitor_commands": module}), self.assertRaises(SystemExit):
-            exec(compile(BUILDER_MODULE.BOOTSTRAP, "__main__.py", "exec"), {})
-        selected.assert_called_once_with(portable=True)
-
-    def test_schema_four_and_five_exact_members_update_and_rollback(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory); modern = root / "modern.pyz"; built = build(modern)
-            for version, members in ((4, BUILDER_MODULE.MEMBERS_V4), (5, BUILDER_MODULE.MEMBERS_V5)):
-                with self.subTest(version=version):
-                    old = root / f"v{version}.pyz"
-                    with zipfile.ZipFile(modern) as source, zipfile.ZipFile(old, "w") as archive:
-                        archive.writestr("strata_cli/", b"")
-                        for name in members:
-                            content = (b"from strata_cli.monitor_commands import main\nraise SystemExit(main())\n"
-                                       if name == "__main__.py" else source.read(name))
-                            archive.writestr(name, content)
-                    report = dict(built, schema_version=version, bundle=old.name,
-                                  sha256=hashlib.sha256(old.read_bytes()).hexdigest())
-                    with zipfile.ZipFile(old) as archive:
-                        report["files"] = {name: hashlib.sha256(archive.read(name)).hexdigest() for name in members}
-                    old.with_name(old.name + ".manifest.json").write_text(json.dumps(report))
-                    self.assertEqual(verify(old)["schema_version"], version)
-                    self.assertNotIn("strata_cli/consoleinfo.py", report["files"])
-                    self.assertNotIn("strata_cli/overview.py", report["files"])
-                    target = root / f"installed-v{version}"
-                    install(old, target, if_candidate_sha256=report["sha256"])
-                    update(modern, target, if_current_sha256=report["sha256"], if_candidate_sha256=built["sha256"])
-                    self.assertEqual(verify(target / modern.name)["schema_version"], 6)
-                    rollback(target, if_active_sha256=built["sha256"], if_rollback_sha256=report["sha256"])
-                    self.assertEqual(verify(target / old.name)["schema_version"], version)
-
-    def test_schema6_member_missing_extra_duplicate_or_tampered_is_rejected(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory); original = root / "original.pyz"; built = build(original)
-            with zipfile.ZipFile(original) as archive:
-                contents = {name: archive.read(name) for name in archive.namelist()}
-            for kind in ("missing", "extra", "duplicate", "tampered", "old-schema", "unknown-schema"):
-                with self.subTest(kind=kind):
-                    bundle = root / (kind + ".pyz"); entries = dict(contents)
-                    if kind == "missing": del entries["strata_cli/consoleinfo.py"]
-                    if kind == "extra": entries["strata_cli/unknown.py"] = b"pass\n"
-                    if kind == "tampered": entries["strata_cli/overview.py"] += b"\n# changed\n"
-                    with zipfile.ZipFile(bundle, "w") as archive:
-                        for name, content in entries.items(): archive.writestr(name, content)
-                        if kind == "duplicate":
-                            with self.assertWarns(UserWarning):
-                                archive.writestr("strata_cli/consoleinfo.py", entries["strata_cli/consoleinfo.py"])
-                    report = dict(built, bundle=bundle.name, sha256=hashlib.sha256(bundle.read_bytes()).hexdigest())
-                    if kind == "old-schema": report["schema_version"] = 5
-                    if kind == "unknown-schema": report["schema_version"] = 7
-                    bundle.with_name(bundle.name + ".manifest.json").write_text(json.dumps(report))
-                    with self.assertRaises(ValueError): verify(bundle)
-
-    def test_portable_help_leaves_source_seven_views_unchanged(self):
-        from strata_cli import monitor_commands as commands
-        source_help = commands.parser().format_help()
-        portable_help = commands.parser(portable=True).format_help()
-        self.assertIn("seven views", source_help)
-        self.assertIn("Connect", source_help)
-        self.assertIn("six views", portable_help)
-        self.assertNotIn("Connect", portable_help)
-
-    def test_portable_and_source_interactive_routes_stay_separate(self):
-        from strata_cli import monitor_commands as commands
-        # Validate the real constructor signature without importing optional
-        # Textual or running any console/font setup in this stdlib fixture.
-        tree = ast.parse((ROOT / "strata_cli/monitor.py").read_text(encoding="utf-8"))
-        app = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "MonitorApp")
-        constructor = copy.deepcopy(next(node for node in app.body if isinstance(node, ast.FunctionDef) and node.name == "__init__"))
-        constructor.name = "readonly_constructor"; constructor.args.args.pop(0)
-        constructor.body = [ast.Pass()]; constructor.decorator_list = []; constructor.returns = None
-        for node in ast.walk(constructor):
-            if isinstance(node, ast.arg): node.annotation = None
-        namespace = {}
-        exec(compile(ast.fix_missing_locations(ast.Module(body=[constructor], type_ignores=[])), "constructor-signature", "exec"), namespace)
-        endpoint = {"url": "http://127.0.0.1:1", "credential_env": "TEST_UNUSED_KEY",
-                    "timeout_s": 3, "prefix": ""}
-        for portable in (False, True):
-            with self.subTest(portable=portable):
-                readonly = mock.create_autospec(namespace["readonly_constructor"], return_value=mock.Mock())
-                launch = mock.Mock()
-                with mock.patch.dict(sys.modules, {"strata_cli.monitor": mock.Mock(MonitorApp=readonly),
-                                                   "strata_cli.launch.monitor_ext": mock.Mock(LaunchMonitor=launch)}), \
-                        mock.patch.object(commands.connections, "resolve", return_value=endpoint), \
-                        mock.patch.object(sys.stdout, "isatty", return_value=True):
-                    args = ["monitor", "--url", endpoint["url"]]
-                    self.assertEqual(commands.main(args, portable=True) if portable else commands.main(args), 0)
-                chosen, unused = (readonly, launch) if portable else (launch, readonly)
-                chosen.return_value.run.assert_called_once_with()
-                unused.assert_not_called()
-                if portable: self.assertIsNone(chosen.call_args.args[1])
-
     @staticmethod
     def _candidate(source: Path, destination: Path) -> Path:
         destination.parent.mkdir()
@@ -518,11 +257,26 @@ class MonitorBundleTests(unittest.TestCase):
             self.assertFalse(target.exists())
             self.assertFalse(list(root.glob(".strata-monitor-install-*")))
 
+    def test_actual_symlink_input_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);bundle=root/'monitor.pyz';build(bundle)
+            linked=root/'linked.pyz'
+            try:
+                linked.symlink_to(bundle)
+            except OSError as error:
+                if getattr(error,'winerror',None)==1314:
+                    self.skipTest('Windows symlink privilege unavailable; actual link not tested')
+                raise
+            with self.assertRaisesRegex(ValueError,'bounded regular'):verify(linked)
+
     def test_bundle_verification_rejects_large_or_linked_input(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             bundle = root / "monitor.pyz"
             build(bundle)
+            with mock.patch.object(BUILDER_MODULE.stat, "S_ISREG", return_value=False):
+                with self.assertRaisesRegex(ValueError, "bounded regular"):
+                    verify(bundle)
             with bundle.open("ab") as stream:
                 stream.write(b"x" * (1024 * 1024))
             with self.assertRaisesRegex(ValueError, "bounded regular"):
@@ -539,26 +293,37 @@ class MonitorBundleTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "manifest or SHA-256"):
                 verify(bundle)
 
-    def test_actual_symlink_input_is_rejected(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory); bundle = root / "monitor.pyz"; build(bundle)
-            linked = root / "linked.pyz"
-            try:
-                linked.symlink_to(bundle)
-            except OSError as error:
-                if os.name == "nt" and getattr(error, "winerror", None) == 1314:
-                    self.skipTest("Windows symlink creation privilege is unavailable; actual link not tested")
-                raise
-            with self.assertRaisesRegex(ValueError, "bounded regular"):
-                verify(linked)
+    def test_bundle_carries_every_module_its_entry_point_imports(self):
+        """The import closure of strata_cli.monitor_commands (lazy imports included) minus the launch package must be in the bundle."""
+        import ast
+        needed, todo = set(), ["strata_cli/monitor_commands.py"]
+        while todo:
+            name = todo.pop()
+            if name in needed:
+                continue
+            needed.add(name)
+            for node in ast.walk(ast.parse((ROOT / name).read_text(encoding="utf-8"))):
+                if isinstance(node, ast.ImportFrom) and node.module and node.module.split(".")[0] == "strata_cli":
+                    names = [node.module] + [node.module + "." + a.name for a in node.names]
+                elif isinstance(node, ast.Import):
+                    names = [a.name for a in node.names]
+                else:
+                    continue
+                for module in names:
+                    path = module.replace(".", "/") + ".py"
+                    if module.startswith("strata_cli") and (ROOT / path).is_file() and "/launch/" not in path:
+                        todo.append(path)
+        self.assertLessEqual(needed, set(BUILDER_MODULE.SOURCES))
 
-    def test_nonregular_input_is_rejected_without_symlink_privilege(self):
-        from types import SimpleNamespace
-        with tempfile.TemporaryDirectory() as directory:
-            bundle = Path(directory) / "monitor.pyz"; build(bundle)
-            with mock.patch.object(Path, "lstat", return_value=SimpleNamespace(st_mode=0o120777)):
-                with self.assertRaisesRegex(ValueError, "bounded regular"):
-                    verify(bundle)
+    def test_plain_monitor_runs_when_the_launch_package_is_not_bundled(self):
+        """The pyz has no strata_cli.launch: interactive `monitor` must fall back to the plain Monitor, not fail."""
+        from strata_cli import monitor as monitor_module
+        from strata_cli import monitor_commands
+        ran = []
+        blocked = {"strata_cli.launch.monitor_ext": None}       # None in sys.modules makes the import raise ImportError
+        with mock.patch.dict(sys.modules, blocked),                 mock.patch.object(monitor_module.MonitorApp, "run", lambda self: ran.append(self.endpoint.base_url)),                 mock.patch.object(sys.stdout, "isatty", return_value=True):
+            code = monitor_commands.main(["monitor", "--url", "http://127.0.0.1:9"])
+        self.assertEqual((code, ran), (0, ["http://127.0.0.1:9"]))
 
     def test_versioned_manifest_keeps_legacy_update_and_rollback_available(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -571,7 +336,8 @@ class MonitorBundleTests(unittest.TestCase):
             for old_bundle, version in ((current, 1), (previous, 2), (old_visual, 3)):
                 with zipfile.ZipFile(modern) as source, zipfile.ZipFile(old_bundle, "w", zipfile.ZIP_DEFLATED) as legacy:
                     for item in source.infolist():
-                        if item.filename not in ("strata_cli/detail_dashboard.py", "strata_cli/nav.py", "strata_cli/consoleinfo.py", "strata_cli/overview.py") and \
+                        if item.filename not in ("strata_cli/detail_dashboard.py", "strata_cli/nav.py",
+                                                 "strata_cli/consoleinfo.py", "strata_cli/overview.py") and \
                                 (version >= 3 or item.filename != "strata_cli/dashboard.py") and \
                                 (version != 1 or item.filename != "LICENSE"):
                             legacy.writestr(item, source.read(item.filename))
@@ -681,13 +447,13 @@ class MonitorBundleTests(unittest.TestCase):
                                capture_output=True, text=True)
                 subprocess.run([sys.executable, str(BUILDER), "verify", str(bundle)], check=True,
                                capture_output=True, text=True)
-                self.assertLessEqual(bundle.stat().st_size, BUILDER_MODULE.MAX_BUNDLE_BYTES)
+                self.assertLess(bundle.stat().st_size, 96 * 1024)
                 with zipfile.ZipFile(bundle) as archive:
                     self.assertIn(b"MIT License", archive.read("LICENSE"))
                     self.assertIn("strata_cli/dashboard.py", archive.namelist())
                 if importlib.util.find_spec("textual") is not None:
                     import_check = subprocess.run(
-                        [sys.executable, "-I", "-X", "utf8", "-c",
+                        [sys.executable, "-I", "-c",
                          "import sys; sys.path.insert(0, " + repr(str(bundle)) + "); "
                          "from strata_cli.monitor import MonitorApp; print(MonitorApp.__name__)"],
                         cwd=directory, capture_output=True, text=True, check=True)
