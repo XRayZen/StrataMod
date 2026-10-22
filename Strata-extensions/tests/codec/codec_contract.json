@@ -1,0 +1,16 @@
+{
+  "version": "T27-pre-v2",
+  "recipe_revision": "935817c66f5d6e64838f419692545f06787e485f",
+  "rust_version": "1.97.1",
+  "opencv_version": "4.12.0",
+  "scope": "Windows official CPU codec and Python API; no model inference, GPU, HTTP server or tool execution qualification",
+  "normal_runtime_changes": false,
+  "Recipe_source_patches": [],
+  "build_dependency_patches": ["opencv-binding-generator-0.93.0 Generator Clang19 Drop: upstream501fb53af1f610455e667136c41d914d44f4ff8d hunk backport"],
+  "tokenizer_sha256": "81f64d1248a68ce3663e07ab3ee48b851e5df0e32d27cb98e4c9a268151e8d99",
+  "expected_defaults": {"disabled": 8192, "enabled": 65536, "max": 131072},
+  "alias": "strata",
+  "context_fixture": 262144,
+  "work_envelope_estimate_bytes": 21474836480,
+  "envelope_is_measured_peak": false
+}

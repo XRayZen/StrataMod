@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "owned_root": "C:/Develop/AI/Strata-extensions",
+  "model": {
+    "family": "deepseek41",
+    "model_id": "deepseek-v4.1-flash-1017-ud-q4_k_xl",
+    "variant": "UD-Q4_K_XL",
+    "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+    "shards": 9,
+    "planned_bytes": 500707576573,
+    "quant_policy": "preserve-source-native-types",
+    "quant_dispatch": "verified-block-layout-not-q4-label",
+    "tokenizer_family": "deepseek41",
+    "qwen_ple": false,
+    "shared_qwen_mtp": false
+  },
+  "sources": {
+    "strata": {"revision": "477ac13cbe8e582c20484871ce459d20d82df09d", "adoption": "reference-only", "license": "pending-source-notice-review", "notice_status": "pending-before-code-adoption", "boundary": "HIP infrastructure; four small versioned upstream hooks"},
+    "mmnga": {"revision": "d4c07dde710cd009c47f36a8d002ff938b0eef67", "adoption": "reference-only", "license": "pending-source-notice-review", "notice_status": "pending-before-code-adoption", "boundary": "DeepSeek engine and kernels; CUDA implementation requires HIP adaptation"},
+    "maya": {"revision": "8d9a9b5d705049a87da853717cdc59440252de30", "adoption": "reference-only", "license": "MIT", "additional_notices": ["ggml-MIT-when-adopted"], "notice_status": "pending-before-code-adoption", "boundary": "First port candidate for native GGUF, Windows, kernels and layer flow; no CPU compute fallback"},
+    "lucebox": {"revision": "81940128d118f4d2bc0070e4c772542938c7a5c3", "adoption": "reference-only", "license": "Apache-2.0", "notice_status": "pending-before-code-adoption", "boundary": "Structure, state and canonical route join reference; no custom quant or routing bias adoption"},
+    "gguf": {"revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1", "adoption": "reference-only", "license": "pending-model-notice-review", "notice_status": "pending-before-code-adoption", "boundary": "UD-Q4_K_XL native asset source; nine headers not inventoried by T01"},
+    "official_model": {"revision": "1bae0e1088993b9b82de08f59de5be5a34e42170", "adoption": "reference-only", "license": "pending-model-notice-review", "notice_status": "pending-before-code-adoption", "boundary": "1017 config, encoding and numerical specification reference"},
+    "deepinfer": {"revision": "774ce244b87cc0eb8d4b94ab9f5de2ab22049f01", "adoption": "reference-only", "license": "Apache-2.0", "notice_status": "pending-before-code-adoption", "boundary": "First official state and numerical reference; no wholesale CUDA, TileLang or service replacement"},
+    "recipe": {"revision": "935817c66f5d6e64838f419692545f06787e485f", "adoption": "reference-only", "license": "MIT", "additional_notices": ["tokenizer-separate-notice"], "notice_status": "pending-before-code-adoption", "boundary": "CPU token-ID codec and parser candidate; not tool permission or runtime owner authority"}
+  },
+  "upstream_hooks": ["cmake-backend-target", "engine-family-dispatch", "serve-family-factory", "official-manager-descriptor"],
+  "owner_integration": {
+    "authority": "existing-official-manager",
+    "new_registry": false,
+    "normal_start_receipt_required": false,
+    "legacy_plain_registration": "preserved",
+    "existing_source_and_process_guards": "preserved"
+  },
+  "evidence": {
+    "header_inventory": "pending-T03",
+    "native_layouts": "pending-T03",
+    "tokenizer_identity": "pending-T03",
+    "native_build": "pending-T06",
+    "runtime": "not-executed"
+  }
+}

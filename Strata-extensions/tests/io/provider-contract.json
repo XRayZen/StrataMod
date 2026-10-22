@@ -1,0 +1,18 @@
+{
+  "version": "T17-pre-v2",
+  "scope": "Windows bounded span provider only; no real model working set or GPU supply",
+  "test_paths": ["PreferDirect", "Buffered", "Mapped"],
+  "pipeline_config_examples": [1,2,9],
+  "capacity_policy": "Constructor config must fit actual aligned buffer capacities; arbitrary span lists stream by cursor. Pipeline capacities are not model/context/output/cache limits.",
+  "logical_base_policy": "physical offset = logical absolute offset - FixtureView source base; physical file size must equal view bytes",
+  "control": "WAKE_TAG UINT64_MAX is reserved; no data tag collision/wrap, no credit recovery from control/unknown/duplicate",
+  "lifetime": "Caller retains immutable Identity/span descriptors/destination/aligned buffers/provider/DirectFile until all completions collected. Failed drain quarantines and prohibits reuse; never close with outstanding writes.",
+  "fallback": "Safe drained direct failure may use buffered/mmap on guarded same source. Genuine bounds/short/identity failure is never rescued. Unknown measurement alone never disables fallback.",
+  "OS_global_cache": "unknown; bounded own buffers/mapped windows do not imply bounded OS file cache",
+  "physical_io": null,
+  "EOF_observation": "Actual past-EOF data completion required; Windows may choose asynchronous IOCP without immediate nudge. Explicit real wake and shared-adapter control mixing verify control credits; observed internal nudge count may be zero.",
+  "owner_connection": "Actual T16 host Reading to Filled callback and cancelled Reading drain; synthetic unused Device descriptor, no GPU/event claim.",
+  "metadata_scope": "Wrapper object/vector/path capacity payload only; allocator overhead, DirectFile private heap and OS cache unknown. Buffered read_exact temporary <= max_chunk; mapping range includes allocation-granularity prefix.",
+  "host_min_assertions": 160,
+  "normal_runtime_changes": false
+}

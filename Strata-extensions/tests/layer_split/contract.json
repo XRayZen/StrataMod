@@ -1,0 +1,34 @@
+{
+  "schema": "T45-layer-split-contract-v1",
+  "cut": {
+    "legal": [
+      1,
+      39
+    ],
+    "qualification": 24
+  },
+  "tokens": [
+    3,
+    37,
+    1024
+  ],
+  "context_fixture": 3,
+  "full_logits_fixture": true,
+  "roles": "distinct physical identity; no ordinal or SKU whitelist",
+  "precision": "canonical Q/G bits/classes exact; no new global ULP envelope",
+  "normal_limits_unchanged": true,
+  "ordinary_audit": "null; no intermediate D2H",
+  "copy": "T21 serialized caller; Ready reader held through actual consumer stream/event; drain before boundary retirement",
+  "state": "pending writer-only; delta KV/key mirrors; current selected or candidate prefix/metadata by actual writer edge",
+  "tap": "synthetic target37/38/39 HCmean BF16-valued FP32 only; actual extraction/draft T47",
+  "qualification": {
+    "full40": "prefill2+append1; all120frame/387840logits",
+    "small": "controlled ratio2 selected/zero-row/next; actual cancel/fresh; synthetic tap reverse direction"
+  },
+  "not_qualified": [
+    "normalCLI/mode/speed T46",
+    "draft/graph T47",
+    "physical simultaneous occupancy",
+    "unobserved peer path"
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "schema": "T36-small-owner-preparation/v1",
+  "GPU_executed": false,
+  "mode": "--owners",
+  "prompt": [
+    3,
+    37
+  ],
+  "reference_fed_inputs": 2,
+  "candidate_initial_inputs": [
+    3
+  ],
+  "candidate_next_input": 37,
+  "candidate_fed_inputs": 2,
+  "total_full_Core_fed_inputs": 4,
+  "context": 3,
+  "Primary": {
+    "device_slots": 2,
+    "ram_slots": 2,
+    "tile_bytes": 2097152
+  },
+  "Row": {
+    "device_slots": 24,
+    "ram_slots": 24,
+    "request_slots": 1,
+    "wave_requests": 1
+  },
+  "literal_rejections": 7,
+  "literal_adoptions": 4,
+  "raw_FP32_values_compared": 129280,
+  "actual_Expert_retained_pair_HTTP": "not included; separate required gaps",
+  "full_state_payload_verified": false,
+  "owner_probe_wait_seconds": 30,
+  "scope": "test only; no normal context/output/retry or resource policy change"
+}

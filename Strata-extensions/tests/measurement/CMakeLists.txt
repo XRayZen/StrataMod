@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.20)
+project(t34_measurement LANGUAGES CXX)
+add_executable(t34_measurement measurement_fixture.cpp ../../native/stats/measurement.cpp)
+target_include_directories(t34_measurement PRIVATE ../../native/stats)
+target_compile_features(t34_measurement PRIVATE cxx_std_17)
+set_property(TARGET t34_measurement PROPERTY MSVC_RUNTIME_LIBRARY MultiThreaded)
+target_compile_options(t34_measurement PRIVATE /W4 /EHsc /fp:strict)
+target_compile_definitions(t34_measurement PRIVATE T34_SOURCE_SHA="${T34_SOURCE_SHA}")

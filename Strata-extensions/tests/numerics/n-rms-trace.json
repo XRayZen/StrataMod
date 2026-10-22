@@ -1,0 +1,87 @@
+{
+  "scope": "N official RMSNorm mathematical CPU fixture only; not GPU/full-model N-Q quality",
+  "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash-1017/resolve/1bae0e1088993b9b82de08f59de5be5a34e42170/inference/model.py",
+  "source_sha256": "e5decd76fe70fd56ef2f10124d245c6f64fb6a0003cc9068a1d3182a168b8d2d",
+  "source_lines": "281-293",
+  "hidden": 5120,
+  "epsilon": 1e-20,
+  "input_dtype": "BF16",
+  "weight_dtype": "BF16",
+  "intermediate_dtype": "FP32",
+  "output_dtype": "BF16",
+  "derivation": "Independent Decimal precision100 mathematical trace with explicit IEEE FP32 nearest-even after each declared stage and BF16 nearest-even after weight multiply; no reference.py or candidate/G results imported. Constant-magnitude powers of two make squared sum exact irrespective of reduction topology in these fixtures.",
+  "cases": [
+    {
+      "name": "zero",
+      "input_pattern": [
+        0.0
+      ],
+      "weight": 1.0,
+      "expected": {
+        "variance_fp32": "00000000",
+        "add_epsilon_fp32": "1e3ce508",
+        "rsqrt_fp32": "501502f9",
+        "pre_output_fp32_pattern": [
+          "00000000"
+        ],
+        "output_bf16_pattern": [
+          "0000"
+        ],
+        "output_shape": [
+          1,
+          5120
+        ]
+      }
+    },
+    {
+      "name": "unit",
+      "input_pattern": [
+        1.0,
+        -1.0
+      ],
+      "weight": 1.0,
+      "expected": {
+        "variance_fp32": "3f800000",
+        "add_epsilon_fp32": "3f800000",
+        "rsqrt_fp32": "3f800000",
+        "pre_output_fp32_pattern": [
+          "3f800000",
+          "bf800000"
+        ],
+        "output_bf16_pattern": [
+          "3f80",
+          "bf80"
+        ],
+        "output_shape": [
+          1,
+          5120
+        ]
+      }
+    },
+    {
+      "name": "small-weighted",
+      "input_pattern": [
+        2.3283064365386963e-10,
+        -2.3283064365386963e-10
+      ],
+      "weight": 1.03125,
+      "expected": {
+        "variance_fp32": "1f800000",
+        "add_epsilon_fp32": "1f979ca1",
+        "rsqrt_fp32": "4f6b38e5",
+        "pre_output_fp32_pattern": [
+          "3f7292ac",
+          "bf7292ac"
+        ],
+        "output_bf16_pattern": [
+          "3f73",
+          "bf73"
+        ],
+        "output_shape": [
+          1,
+          5120
+        ]
+      }
+    }
+  ]
+}

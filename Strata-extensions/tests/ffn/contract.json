@@ -1,0 +1,179 @@
+{
+  "schema": "strata-t11-operator-contract/v1",
+  "scope": "offline operator preparation; no full-model/official GPU reference qualification",
+  "source": {
+    "revision": "1bae0e1088993b9b82de08f59de5be5a34e42170",
+    "model_sha256": "e5decd76fe70fd56ef2f10124d245c6f64fb6a0003cc9068a1d3182a168b8d2d",
+    "kernel_sha256": "1236c3507019ed176f5dba5e04bcea58867cf654818c6cf138ed4845398c2455"
+  },
+  "N": [
+    {
+      "source": "-20",
+      "softplus_fp32_le": "33a40d31",
+      "sqrtsoftplus_fp32_le": "ce6b3e38",
+      "clamp_gate_fp32_le": "0000a0c1",
+      "clamp_up_fp32_le": "000020c1",
+      "silu_fp32_le": "3f0d31b3"
+    },
+    {
+      "source": "-10",
+      "softplus_fp32_le": "b26a3e38",
+      "sqrtsoftplus_fp32_le": "5bc9dc3b",
+      "clamp_gate_fp32_le": "000020c1",
+      "clamp_up_fp32_le": "000020c1",
+      "silu_fp32_le": "fd03eeb9"
+    },
+    {
+      "source": "-1",
+      "softplus_fp32_le": "d663a03e",
+      "sqrtsoftplus_fp32_le": "5c480f3f",
+      "clamp_gate_fp32_le": "000080bf",
+      "clamp_up_fp32_le": "000080bf",
+      "silu_fp32_le": "b1b289be"
+    },
+    {
+      "source": "0",
+      "softplus_fp32_le": "1872313f",
+      "sqrtsoftplus_fp32_le": "4d22553f",
+      "clamp_gate_fp32_le": "00000000",
+      "clamp_up_fp32_le": "00000000",
+      "silu_fp32_le": "00000000"
+    },
+    {
+      "source": "1",
+      "softplus_fp32_le": "f518a83f",
+      "sqrtsoftplus_fp32_le": "5aaf923f",
+      "clamp_gate_fp32_le": "0000803f",
+      "clamp_up_fp32_le": "0000803f",
+      "silu_fp32_le": "a8263b3f"
+    },
+    {
+      "source": "10",
+      "softplus_fp32_le": "30002041",
+      "sqrtsoftplus_fp32_le": "e0624a40",
+      "clamp_gate_fp32_le": "00002041",
+      "clamp_up_fp32_le": "00002041",
+      "silu_fp32_le": "24fe1f41"
+    },
+    {
+      "source": "20",
+      "softplus_fp32_le": "0000a041",
+      "sqrtsoftplus_fp32_le": "bd1b8f40",
+      "clamp_gate_fp32_le": "00002041",
+      "clamp_up_fp32_le": "00002041",
+      "silu_fp32_le": "24fe1f41"
+    },
+    {
+      "source": "21",
+      "softplus_fp32_le": "0000a841",
+      "sqrtsoftplus_fp32_le": "76a49240",
+      "clamp_gate_fp32_le": "00002041",
+      "clamp_up_fp32_le": "00002041",
+      "silu_fp32_le": "24fe1f41"
+    }
+  ],
+  "Q": {
+    "router_cases": [
+      {
+        "input": 0,
+        "image_bias": false,
+        "selected": [
+          103,
+          99,
+          229,
+          249,
+          146,
+          347
+        ],
+        "weights_fp32_le": "f9078d3e18cb803e980c7b3e2e457f3eeed3743e2e34753e",
+        "scores_sha256": "7c7b6560e6348086ec256654f8c2ac5d0699040387c1b35d7fbf1c9c9a20692d",
+        "corrected_sha256": "a6abc8f2eba6abdb26fabb167cc998fe47a0b4dee37a85165a4532d8be60db56"
+      },
+      {
+        "input": 0,
+        "image_bias": true,
+        "selected": [
+          103,
+          249,
+          99,
+          229,
+          347,
+          146
+        ],
+        "weights_fp32_le": "f8078d3e2d457f3e18cb803e970c7b3e2d34753eebd3743e",
+        "scores_sha256": "7c7b6560e6348086ec256654f8c2ac5d0699040387c1b35d7fbf1c9c9a20692d",
+        "corrected_sha256": "a91b0ed71027488ce690f0b3afc288d7ebb140afc15900b9efc185f6ffa7bae6"
+      },
+      {
+        "input": 1,
+        "image_bias": false,
+        "selected": [
+          54,
+          129,
+          177,
+          227,
+          38,
+          92
+        ],
+        "weights_fp32_le": "f4db903e60a6883e5e63803ee010733e438e6b3e7c956d3e",
+        "scores_sha256": "18b1a40474e69f899f49e4c26e59f2aa7a064b54b5c28f617125dd657f4690c9",
+        "corrected_sha256": "084aec61ac69fec46cacbd4230fe32bf9365dba2c1e54b253b200cb882ee95f7"
+      },
+      {
+        "input": 1,
+        "image_bias": true,
+        "selected": [
+          54,
+          129,
+          177,
+          227,
+          92,
+          38
+        ],
+        "weights_fp32_le": "f4db903e60a6883e5e63803ee010733e7c956d3e438e6b3e",
+        "scores_sha256": "18b1a40474e69f899f49e4c26e59f2aa7a064b54b5c28f617125dd657f4690c9",
+        "corrected_sha256": "6145c7febbfcb57a50d60db7774304334f93832e533317a1b3477afaafef841d"
+      }
+    ],
+    "selected_experts": [
+      38,
+      54,
+      92,
+      99,
+      103,
+      129,
+      146,
+      177,
+      227,
+      229,
+      249,
+      347
+    ],
+    "inputs": "A=((i*17+11)%257-128)/256; B holdout=((i*29+73)%251-125)/128; BF16 RNE",
+    "input_sha256": "bc47bd601a1635ae514a734c8f828239e49f7459c1ad58fbef72db976b666a33"
+  },
+  "selected_experts": [
+    38,
+    54,
+    92,
+    99,
+    103,
+    129,
+    146,
+    177,
+    227,
+    229,
+    249,
+    347
+  ],
+  "precision": {
+    "projection": "FP32 separate product, K ascending +0 accumulation; FMA off; exact Q/G",
+    "nonlinear": "FP32 target, local <=2ULP against independent Decimal small trace; cast/FP8 code/selection/final BF16 exact",
+    "act_scale": "FP32 absmax then max(FP32(1e-4)), FP32 multiply by FP32(1/448), IEEE pow2ceil from exponent/mantissa, UE8M0 scale, FP32 divide then FP8 E4M3FN RNE saturation448; finite only fixture",
+    "router": "sqrt(softplus FP32, threshold20); bias selects only; unbiased selected scores normalized by ordered sum+1e-20 then times1.5",
+    "expert": "gate/up BF16 outputs -> FP32 clamp gate max10/up[-10,10] -> SiLU*up -> route multiply -> BF16 -> down actQDQ -> down BF16",
+    "combine": "expert ID ascending FP32 accumulator -> shared BF16 output add -> final BF16"
+  },
+  "completion_dependency": "T05 full9 receipt -> T10 actual source qualification -> T11 full-source review",
+  "G_executed": false
+}

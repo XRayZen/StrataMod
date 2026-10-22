@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.20)
+project(t10_model_artifact LANGUAGES CXX)
+add_executable(t10_model_artifact artifact_fixture.cpp ../../models/deepseek41/artifact.cpp ../../native/artifact/native_reader.cpp)
+target_include_directories(t10_model_artifact PRIVATE ../../models/deepseek41 ../../native/artifact ../../../include)
+target_compile_features(t10_model_artifact PRIVATE cxx_std_17)
+set_property(TARGET t10_model_artifact PROPERTY MSVC_RUNTIME_LIBRARY MultiThreaded)
+target_compile_options(t10_model_artifact PRIVATE /W4 /EHsc /fp:strict)
+target_compile_definitions(t10_model_artifact PRIVATE T10_SOURCE_SHA="${T10_SOURCE_SHA}")

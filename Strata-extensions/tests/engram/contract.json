@@ -1,0 +1,11 @@
+{
+  "schema": "T13-offline-hash-gather/v1",
+  "official_revision": "1bae0e1088993b9b82de08f59de5be5a34e42170",
+  "GGUF_revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+  "layers": [1, 14], "ngrams": [2, 3, 4], "heads": 8,
+  "dimension": 256, "row_bytes": 264, "compressed_vocabulary": 99092,
+  "tokens": [0, 42], "real_rows": 96, "real_bytes": 25344,
+  "tuple_sha256": "e640ac7850fdf2af2721b641f61c6b5acadbf42f451afa285606d10714d4783f",
+  "oracle_tokenizers": "0.23.2", "work_estimate_bytes": 536870912,
+  "scope": "Offline hash/history and native MXFP8 row lookup only; full T05/T10 qualification pending. Full Engram projection/gate/residual belongs to T20 owned helper, independently tested by T25 with N/Q fixed before G. No model inference qualification or normal context/cache limit."
+}

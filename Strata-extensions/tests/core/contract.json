@@ -1,0 +1,43 @@
+{
+  "schema": "strata-t20-core-contract/v1",
+  "status": "implementation in progress; G not executed; full stage Q and lifetime manifest not yet frozen",
+  "full_source_qualified": false,
+  "source": {
+    "HF_revision": "1bae0e1088993b9b82de08f59de5be5a34e42170",
+    "model_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash-1017/resolve/1bae0e1088993b9b82de08f59de5be5a34e42170/inference/model.py",
+    "model_sha256": "e5decd76fe70fd56ef2f10124d245c6f64fb6a0003cc9068a1d3182a168b8d2d",
+    "kernel_sha256": "1236c3507019ed176f5dba5e04bcea58867cf654818c6cf138ed4845398c2455",
+    "license": "MIT; retain fixed HF license and existing adopted component notices in bundle"
+  },
+  "canonical": {
+    "weight_projection": "original full K; +0 initial; ascending-K FP32 multiply then FP32 add; no FMA/reassociation/K partial sum",
+    "cast": "BF16 RNE; FP8 E4M3FN RNE/satfinite; scale FP32 operation order from fixed kernel",
+    "residual": "mHC 4 copies; per-sublayer post/comb; incoming-pre -> attn-pre -> ffn-pre; final collapse then learned RMS5120/eps1e-20/BF16 then head input float32/no activation QDQ",
+    "engram": "HC-specific residual RMS AND key RMS, eps1e-20; inverse product; ((h*fused_gate)*key) ascending reduction; dim^-0.5 FP32 scalar; copysign(sqrt(max(abs(dot),1e-6)),dot); sigmoid; token mask; residual BF16",
+    "gate_conversion_provenance": "GGUF fused F32 gate shape/bytes known; exact official q_weight*k_weight converter-body equivalence pending T25, never inferred from name alone"
+  },
+  "comparison": {
+    "native_decode": "exact bits, nonfinite class and format-specific signed-zero contract",
+    "ordered_projection": "exact FP32 bits",
+    "BF16_codes_IDs": "exact",
+    "local_transcendental_float32": "prior fixed local 2 ULP; not a full-model N-to-Q quality threshold"
+  },
+  "normal_runtime": {
+    "audit_default": false,
+    "payload_intermediate_D2H": 0,
+    "required_host_outputs": [
+      "runtime route IDs/control",
+      "requested final logits"
+    ],
+    "fixture_caps_are_normal_limits": false
+  },
+  "coverage_pending": [
+    "resident row tile B1/2/3/4/8/9 and ragged output rows",
+    "all operator device APIs versus independent fixed Q",
+    "real PrimarySupply+RowSupply grant/cancel/lastuse",
+    "Engram fullforward and real gathered rows",
+    "all40 layer state, prefill/append/epoch and output norm/head",
+    "affected legacy wrapper compatibility",
+    "full T05 receipt -> actual T10 full-source qualification"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "schema": "T45-source-binding-v1",
+  "required": [
+    "immutable exact consumed-source map",
+    "actual EXE and owned DLLs",
+    "pre-G independent Q seal",
+    "original9 SourceFile tuple/current identity/span",
+    "capture recipe/validator distinct when changed"
+  ],
+  "no_candidate_G_as_expected": true,
+  "old_T44_immutable_unmodified": true
+}

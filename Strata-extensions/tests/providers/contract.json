@@ -1,0 +1,18 @@
+{
+  "schema": "strata-T29-pure-provider/v1",
+  "plan": "build-deepseek-t29/pre-r2.md",
+  "plan_sha256": "9d99cdea7000554253d23953bb2751a7dded07967669d7bb2d6728012102345b",
+  "scope": "pure family assets/profile declaration and catalog dispatch; no profile publication, official registration, launch or normal producer qualification",
+  "T28_dependency_complete": false,
+  "normal_budget_fields": [
+    "device_cache_payload_bytes",
+    "ram_cache_payload_bytes"
+  ],
+  "budget_is_declared_not_resolved": true,
+  "normal_profile_publication": false,
+  "Huihui_default": 262144,
+  "DeepSeek_context_max": 1048576,
+  "normal_model_default_unchanged": true,
+  "normal_engine_in_fixture": "historical T20 capture only, not T28 normal producer",
+  "before_catalog_sha256": "d74f8318f75a386a9b54e0abef568484e4ae9312939ed81e1f1330bbbea5f5fb"
+}

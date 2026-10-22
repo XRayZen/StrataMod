@@ -1,0 +1,476 @@
+{
+  "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+  "original_receipt_sha256": "209bd9447056589998024b5cdb5a9d23c4a29fad281e11db30f201cd048df88b",
+  "additional_fixture_bytes": 94003200,
+  "top6_matrix_fixture_bytes": 112803840,
+  "fixtures": [
+    {
+      "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+      "shard_index": 2,
+      "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00002-of-00009.gguf",
+      "file_bytes": 48129640000,
+      "file_lfs_sha256": "17df217d8fc26a39f21ea40805dc6ab788c7ce8623a59a95c431051df7eafc94",
+      "full_file_sha_verified": false,
+      "tensor": "blk.0.ffn_gate_exps.weight",
+      "type_id": 39,
+      "layout": "MXFP4",
+      "dims_ggml": [
+        5120,
+        2304,
+        384
+      ],
+      "row_bytes": 2720,
+      "selection": "expert1",
+      "index": 1,
+      "absolute_offset": 6268480,
+      "bytes": 6266880,
+      "http": {
+        "status": 206,
+        "start": 6268480,
+        "end": 12535359,
+        "total": 48129640000,
+        "etag": "\"bf230ce8e38b4bf75fad4a1770789160b0e462fa4c32c6f4d150e5567fd6a017\""
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t09-20261021\\fixtures\\blk.0.ffn_gate_exps.weight.expert01.bin",
+      "fixture_sha256": "c231fe9f5e11eb14f678b843c410f95556fc013837c4e617cb03f5fdf71fec30",
+      "qualification": "real bounded source bytes; full shard hash not verified; T09 Q/G pending"
+    },
+    {
+      "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+      "shard_index": 2,
+      "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00002-of-00009.gguf",
+      "file_bytes": 48129640000,
+      "file_lfs_sha256": "17df217d8fc26a39f21ea40805dc6ab788c7ce8623a59a95c431051df7eafc94",
+      "full_file_sha_verified": false,
+      "tensor": "blk.0.ffn_gate_exps.weight",
+      "type_id": 39,
+      "layout": "MXFP4",
+      "dims_ggml": [
+        5120,
+        2304,
+        384
+      ],
+      "row_bytes": 2720,
+      "selection": "expert2",
+      "index": 2,
+      "absolute_offset": 12535360,
+      "bytes": 6266880,
+      "http": {
+        "status": 206,
+        "start": 12535360,
+        "end": 18802239,
+        "total": 48129640000,
+        "etag": "\"bf230ce8e38b4bf75fad4a1770789160b0e462fa4c32c6f4d150e5567fd6a017\""
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t09-20261021\\fixtures\\blk.0.ffn_gate_exps.weight.expert02.bin",
+      "fixture_sha256": "4260b098a456b2de879c67d268bd2239c76fec2007e495d275533749d2125231",
+      "qualification": "real bounded source bytes; full shard hash not verified; T09 Q/G pending"
+    },
+    {
+      "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+      "shard_index": 2,
+      "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00002-of-00009.gguf",
+      "file_bytes": 48129640000,
+      "file_lfs_sha256": "17df217d8fc26a39f21ea40805dc6ab788c7ce8623a59a95c431051df7eafc94",
+      "full_file_sha_verified": false,
+      "tensor": "blk.0.ffn_gate_exps.weight",
+      "type_id": 39,
+      "layout": "MXFP4",
+      "dims_ggml": [
+        5120,
+        2304,
+        384
+      ],
+      "row_bytes": 2720,
+      "selection": "expert3",
+      "index": 3,
+      "absolute_offset": 18802240,
+      "bytes": 6266880,
+      "http": {
+        "status": 206,
+        "start": 18802240,
+        "end": 25069119,
+        "total": 48129640000,
+        "etag": "\"bf230ce8e38b4bf75fad4a1770789160b0e462fa4c32c6f4d150e5567fd6a017\""
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t09-20261021\\fixtures\\blk.0.ffn_gate_exps.weight.expert03.bin",
+      "fixture_sha256": "a327601ee006fadfcf475065be4e47ca27c2459e201d1498922f7491e3661606",
+      "qualification": "real bounded source bytes; full shard hash not verified; T09 Q/G pending"
+    },
+    {
+      "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+      "shard_index": 2,
+      "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00002-of-00009.gguf",
+      "file_bytes": 48129640000,
+      "file_lfs_sha256": "17df217d8fc26a39f21ea40805dc6ab788c7ce8623a59a95c431051df7eafc94",
+      "full_file_sha_verified": false,
+      "tensor": "blk.0.ffn_gate_exps.weight",
+      "type_id": 39,
+      "layout": "MXFP4",
+      "dims_ggml": [
+        5120,
+        2304,
+        384
+      ],
+      "row_bytes": 2720,
+      "selection": "expert4",
+      "index": 4,
+      "absolute_offset": 25069120,
+      "bytes": 6266880,
+      "http": {
+        "status": 206,
+        "start": 25069120,
+        "end": 31335999,
+        "total": 48129640000,
+        "etag": "\"bf230ce8e38b4bf75fad4a1770789160b0e462fa4c32c6f4d150e5567fd6a017\""
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t09-20261021\\fixtures\\blk.0.ffn_gate_exps.weight.expert04.bin",
+      "fixture_sha256": "12ced798580fefe8036251baa59d3ae8ba47b33a59989df16ba988ef8229a096",
+      "qualification": "real bounded source bytes; full shard hash not verified; T09 Q/G pending"
+    },
+    {
+      "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+      "shard_index": 2,
+      "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00002-of-00009.gguf",
+      "file_bytes": 48129640000,
+      "file_lfs_sha256": "17df217d8fc26a39f21ea40805dc6ab788c7ce8623a59a95c431051df7eafc94",
+      "full_file_sha_verified": false,
+      "tensor": "blk.0.ffn_gate_exps.weight",
+      "type_id": 39,
+      "layout": "MXFP4",
+      "dims_ggml": [
+        5120,
+        2304,
+        384
+      ],
+      "row_bytes": 2720,
+      "selection": "expert5",
+      "index": 5,
+      "absolute_offset": 31336000,
+      "bytes": 6266880,
+      "http": {
+        "status": 206,
+        "start": 31336000,
+        "end": 37602879,
+        "total": 48129640000,
+        "etag": "\"bf230ce8e38b4bf75fad4a1770789160b0e462fa4c32c6f4d150e5567fd6a017\""
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t09-20261021\\fixtures\\blk.0.ffn_gate_exps.weight.expert05.bin",
+      "fixture_sha256": "4c22ce0b0598bdd813d6dbc578c2c2410af8a981fa43380cc0bb260e03d6a58f",
+      "qualification": "real bounded source bytes; full shard hash not verified; T09 Q/G pending"
+    },
+    {
+      "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+      "shard_index": 2,
+      "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00002-of-00009.gguf",
+      "file_bytes": 48129640000,
+      "file_lfs_sha256": "17df217d8fc26a39f21ea40805dc6ab788c7ce8623a59a95c431051df7eafc94",
+      "full_file_sha_verified": false,
+      "tensor": "blk.0.ffn_up_exps.weight",
+      "type_id": 39,
+      "layout": "MXFP4",
+      "dims_ggml": [
+        5120,
+        2304,
+        384
+      ],
+      "row_bytes": 2720,
+      "selection": "expert1",
+      "index": 1,
+      "absolute_offset": 4819232320,
+      "bytes": 6266880,
+      "http": {
+        "status": 206,
+        "start": 4819232320,
+        "end": 4825499199,
+        "total": 48129640000,
+        "etag": "\"bf230ce8e38b4bf75fad4a1770789160b0e462fa4c32c6f4d150e5567fd6a017\""
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t09-20261021\\fixtures\\blk.0.ffn_up_exps.weight.expert01.bin",
+      "fixture_sha256": "b5807170c2dff1778ad755762b58f2e86238a1874fcc87525c1a9393a3521146",
+      "qualification": "real bounded source bytes; full shard hash not verified; T09 Q/G pending"
+    },
+    {
+      "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+      "shard_index": 2,
+      "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00002-of-00009.gguf",
+      "file_bytes": 48129640000,
+      "file_lfs_sha256": "17df217d8fc26a39f21ea40805dc6ab788c7ce8623a59a95c431051df7eafc94",
+      "full_file_sha_verified": false,
+      "tensor": "blk.0.ffn_up_exps.weight",
+      "type_id": 39,
+      "layout": "MXFP4",
+      "dims_ggml": [
+        5120,
+        2304,
+        384
+      ],
+      "row_bytes": 2720,
+      "selection": "expert2",
+      "index": 2,
+      "absolute_offset": 4825499200,
+      "bytes": 6266880,
+      "http": {
+        "status": 206,
+        "start": 4825499200,
+        "end": 4831766079,
+        "total": 48129640000,
+        "etag": "\"bf230ce8e38b4bf75fad4a1770789160b0e462fa4c32c6f4d150e5567fd6a017\""
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t09-20261021\\fixtures\\blk.0.ffn_up_exps.weight.expert02.bin",
+      "fixture_sha256": "012567c7a95e7ff65cf5126fa10602c68c0f610a280254cdcd251bcb2569efb6",
+      "qualification": "real bounded source bytes; full shard hash not verified; T09 Q/G pending"
+    },
+    {
+      "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+      "shard_index": 2,
+      "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00002-of-00009.gguf",
+      "file_bytes": 48129640000,
+      "file_lfs_sha256": "17df217d8fc26a39f21ea40805dc6ab788c7ce8623a59a95c431051df7eafc94",
+      "full_file_sha_verified": false,
+      "tensor": "blk.0.ffn_up_exps.weight",
+      "type_id": 39,
+      "layout": "MXFP4",
+      "dims_ggml": [
+        5120,
+        2304,
+        384
+      ],
+      "row_bytes": 2720,
+      "selection": "expert3",
+      "index": 3,
+      "absolute_offset": 4831766080,
+      "bytes": 6266880,
+      "http": {
+        "status": 206,
+        "start": 4831766080,
+        "end": 4838032959,
+        "total": 48129640000,
+        "etag": "\"bf230ce8e38b4bf75fad4a1770789160b0e462fa4c32c6f4d150e5567fd6a017\""
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t09-20261021\\fixtures\\blk.0.ffn_up_exps.weight.expert03.bin",
+      "fixture_sha256": "0815cb42f8c90dac117ec388f066bfd87472848d9016da423918e78bb4f646a5",
+      "qualification": "real bounded source bytes; full shard hash not verified; T09 Q/G pending"
+    },
+    {
+      "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+      "shard_index": 2,
+      "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00002-of-00009.gguf",
+      "file_bytes": 48129640000,
+      "file_lfs_sha256": "17df217d8fc26a39f21ea40805dc6ab788c7ce8623a59a95c431051df7eafc94",
+      "full_file_sha_verified": false,
+      "tensor": "blk.0.ffn_up_exps.weight",
+      "type_id": 39,
+      "layout": "MXFP4",
+      "dims_ggml": [
+        5120,
+        2304,
+        384
+      ],
+      "row_bytes": 2720,
+      "selection": "expert4",
+      "index": 4,
+      "absolute_offset": 4838032960,
+      "bytes": 6266880,
+      "http": {
+        "status": 206,
+        "start": 4838032960,
+        "end": 4844299839,
+        "total": 48129640000,
+        "etag": "\"bf230ce8e38b4bf75fad4a1770789160b0e462fa4c32c6f4d150e5567fd6a017\""
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t09-20261021\\fixtures\\blk.0.ffn_up_exps.weight.expert04.bin",
+      "fixture_sha256": "5fbc623001dafef0174b2b641f4e5a038e788edaec45ab1704deb8964689c0e0",
+      "qualification": "real bounded source bytes; full shard hash not verified; T09 Q/G pending"
+    },
+    {
+      "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+      "shard_index": 2,
+      "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00002-of-00009.gguf",
+      "file_bytes": 48129640000,
+      "file_lfs_sha256": "17df217d8fc26a39f21ea40805dc6ab788c7ce8623a59a95c431051df7eafc94",
+      "full_file_sha_verified": false,
+      "tensor": "blk.0.ffn_up_exps.weight",
+      "type_id": 39,
+      "layout": "MXFP4",
+      "dims_ggml": [
+        5120,
+        2304,
+        384
+      ],
+      "row_bytes": 2720,
+      "selection": "expert5",
+      "index": 5,
+      "absolute_offset": 4844299840,
+      "bytes": 6266880,
+      "http": {
+        "status": 206,
+        "start": 4844299840,
+        "end": 4850566719,
+        "total": 48129640000,
+        "etag": "\"bf230ce8e38b4bf75fad4a1770789160b0e462fa4c32c6f4d150e5567fd6a017\""
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t09-20261021\\fixtures\\blk.0.ffn_up_exps.weight.expert05.bin",
+      "fixture_sha256": "9db593075d685d1f7b942bb04adef0e95f71f7580994bcc8d50b887b1b631587",
+      "qualification": "real bounded source bytes; full shard hash not verified; T09 Q/G pending"
+    },
+    {
+      "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+      "shard_index": 2,
+      "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00002-of-00009.gguf",
+      "file_bytes": 48129640000,
+      "file_lfs_sha256": "17df217d8fc26a39f21ea40805dc6ab788c7ce8623a59a95c431051df7eafc94",
+      "full_file_sha_verified": false,
+      "tensor": "blk.0.ffn_down_exps.weight",
+      "type_id": 39,
+      "layout": "MXFP4",
+      "dims_ggml": [
+        2304,
+        5120,
+        384
+      ],
+      "row_bytes": 1224,
+      "selection": "expert1",
+      "index": 1,
+      "absolute_offset": 2412750400,
+      "bytes": 6266880,
+      "http": {
+        "status": 206,
+        "start": 2412750400,
+        "end": 2419017279,
+        "total": 48129640000,
+        "etag": "\"bf230ce8e38b4bf75fad4a1770789160b0e462fa4c32c6f4d150e5567fd6a017\""
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t09-20261021\\fixtures\\blk.0.ffn_down_exps.weight.expert01.bin",
+      "fixture_sha256": "8ca56b6ff3d9af395433798f209e2b5b233eff17294b7526064d2f09458c57df",
+      "qualification": "real bounded source bytes; full shard hash not verified; T09 Q/G pending"
+    },
+    {
+      "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+      "shard_index": 2,
+      "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00002-of-00009.gguf",
+      "file_bytes": 48129640000,
+      "file_lfs_sha256": "17df217d8fc26a39f21ea40805dc6ab788c7ce8623a59a95c431051df7eafc94",
+      "full_file_sha_verified": false,
+      "tensor": "blk.0.ffn_down_exps.weight",
+      "type_id": 39,
+      "layout": "MXFP4",
+      "dims_ggml": [
+        2304,
+        5120,
+        384
+      ],
+      "row_bytes": 1224,
+      "selection": "expert2",
+      "index": 2,
+      "absolute_offset": 2419017280,
+      "bytes": 6266880,
+      "http": {
+        "status": 206,
+        "start": 2419017280,
+        "end": 2425284159,
+        "total": 48129640000,
+        "etag": "\"bf230ce8e38b4bf75fad4a1770789160b0e462fa4c32c6f4d150e5567fd6a017\""
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t09-20261021\\fixtures\\blk.0.ffn_down_exps.weight.expert02.bin",
+      "fixture_sha256": "c6a9be2315b6985bee9c092256288a7f970a9c14bdccc67bdca0dddcf2b8ce39",
+      "qualification": "real bounded source bytes; full shard hash not verified; T09 Q/G pending"
+    },
+    {
+      "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+      "shard_index": 2,
+      "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00002-of-00009.gguf",
+      "file_bytes": 48129640000,
+      "file_lfs_sha256": "17df217d8fc26a39f21ea40805dc6ab788c7ce8623a59a95c431051df7eafc94",
+      "full_file_sha_verified": false,
+      "tensor": "blk.0.ffn_down_exps.weight",
+      "type_id": 39,
+      "layout": "MXFP4",
+      "dims_ggml": [
+        2304,
+        5120,
+        384
+      ],
+      "row_bytes": 1224,
+      "selection": "expert3",
+      "index": 3,
+      "absolute_offset": 2425284160,
+      "bytes": 6266880,
+      "http": {
+        "status": 206,
+        "start": 2425284160,
+        "end": 2431551039,
+        "total": 48129640000,
+        "etag": "\"bf230ce8e38b4bf75fad4a1770789160b0e462fa4c32c6f4d150e5567fd6a017\""
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t09-20261021\\fixtures\\blk.0.ffn_down_exps.weight.expert03.bin",
+      "fixture_sha256": "650a60813d8f23cdce2745df468c5652fcdc91c8cfd070d5d27979ff5bf79197",
+      "qualification": "real bounded source bytes; full shard hash not verified; T09 Q/G pending"
+    },
+    {
+      "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+      "shard_index": 2,
+      "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00002-of-00009.gguf",
+      "file_bytes": 48129640000,
+      "file_lfs_sha256": "17df217d8fc26a39f21ea40805dc6ab788c7ce8623a59a95c431051df7eafc94",
+      "full_file_sha_verified": false,
+      "tensor": "blk.0.ffn_down_exps.weight",
+      "type_id": 39,
+      "layout": "MXFP4",
+      "dims_ggml": [
+        2304,
+        5120,
+        384
+      ],
+      "row_bytes": 1224,
+      "selection": "expert4",
+      "index": 4,
+      "absolute_offset": 2431551040,
+      "bytes": 6266880,
+      "http": {
+        "status": 206,
+        "start": 2431551040,
+        "end": 2437817919,
+        "total": 48129640000,
+        "etag": "\"bf230ce8e38b4bf75fad4a1770789160b0e462fa4c32c6f4d150e5567fd6a017\""
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t09-20261021\\fixtures\\blk.0.ffn_down_exps.weight.expert04.bin",
+      "fixture_sha256": "a21edc5370ac93a95b988a2fcb8f94f2c0b243f089636c293c5dbc009c64635b",
+      "qualification": "real bounded source bytes; full shard hash not verified; T09 Q/G pending"
+    },
+    {
+      "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+      "shard_index": 2,
+      "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00002-of-00009.gguf",
+      "file_bytes": 48129640000,
+      "file_lfs_sha256": "17df217d8fc26a39f21ea40805dc6ab788c7ce8623a59a95c431051df7eafc94",
+      "full_file_sha_verified": false,
+      "tensor": "blk.0.ffn_down_exps.weight",
+      "type_id": 39,
+      "layout": "MXFP4",
+      "dims_ggml": [
+        2304,
+        5120,
+        384
+      ],
+      "row_bytes": 1224,
+      "selection": "expert5",
+      "index": 5,
+      "absolute_offset": 2437817920,
+      "bytes": 6266880,
+      "http": {
+        "status": 206,
+        "start": 2437817920,
+        "end": 2444084799,
+        "total": 48129640000,
+        "etag": "\"bf230ce8e38b4bf75fad4a1770789160b0e462fa4c32c6f4d150e5567fd6a017\""
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t09-20261021\\fixtures\\blk.0.ffn_down_exps.weight.expert05.bin",
+      "fixture_sha256": "411a8b24eb4ad390b661681bae266b3a4b8ead8871a8546b3fdb4abbd5f2fed3",
+      "qualification": "real bounded source bytes; full shard hash not verified; T09 Q/G pending"
+    }
+  ],
+  "full_file_sha_verified": false,
+  "disk_free_before": 610786197504,
+  "disk_free_after": 610691907584
+}

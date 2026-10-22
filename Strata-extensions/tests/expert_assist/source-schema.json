@@ -1,0 +1,32 @@
+{
+  "schema": "strata-t44-source-schema/v1",
+  "original_source_fields": [
+    "shard_index",
+    "original_path",
+    "original_size",
+    "revision",
+    "lfs_sha256"
+  ],
+  "original_span_fields": [
+    "name",
+    "type",
+    "dims",
+    "offset",
+    "size"
+  ],
+  "job_key_fields": [
+    "request_id",
+    "runtime_epoch",
+    "position",
+    "layer",
+    "expert",
+    "generation"
+  ],
+  "assignment_range": [
+    0,
+    383
+  ],
+  "positions": "copied absolute token values; no borrowed frame arrays",
+  "source_table_copy": false,
+  "raw_download": false
+}

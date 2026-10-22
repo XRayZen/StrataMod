@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.20)
+project(t08_reader LANGUAGES CXX)
+add_executable(t08_reader reader_main.cpp ../../../native/artifact/native_reader.cpp)
+target_include_directories(t08_reader PRIVATE ../../../native/artifact ../../../../include)
+target_compile_features(t08_reader PRIVATE cxx_std_17)
+set_property(TARGET t08_reader PROPERTY MSVC_RUNTIME_LIBRARY MultiThreaded)
+target_compile_options(t08_reader PRIVATE /W4 /EHsc /fp:strict)
+target_compile_definitions(t08_reader PRIVATE T08_SOURCE_SHA="${T08_SOURCE_SHA}")

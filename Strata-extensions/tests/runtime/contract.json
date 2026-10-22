@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "scope": "T30 normal CLI/manager family adapter",
+  "sources": [
+    "OWN/control/deepseek_launch.py", "OWN/control/deepseek_bootstrap.py",
+    "DATA/strata_cli.py", "DATA/manage_runtime.py", "DATA/official_runtime.py",
+    "DATA/startup_progress.py", "DATA/server_bootstrap.py", "DATA/runtime_temp_probe.py",
+    "DATA/temp_probe_child.py", "OWN/tests/runtime/contract.json",
+    "OWN/tests/runtime/test_runtime.py", "OWN/tests/runtime/fixture_child.py",
+    "OWN/tests/runtime/build_verify.py"
+  ],
+  "unchanged": ["Huihui profiles/default", "installed runtime package09a17", "Model9", "Core/math", "T28 consumed source"],
+  "cpu_only_does_not_qualify": ["normal spawn", "Low helper for selected environment", "model generation", "READY", "stop/switch", "T30 completion"],
+  "native_case": {"context": 4096, "prompt_ids": [0, 128803, 128804, 128822], "max_new": 1, "expected_id": 4482,
+                  "test_input_only": true, "normal_limits_changed": false},
+  "guards": ["outer/state locks", "parent/birth/executable", "Low4096", "helper independently exited", "source/resolved/command binding", "foreign listener untouched", "failure returns to status/reselection"]
+}

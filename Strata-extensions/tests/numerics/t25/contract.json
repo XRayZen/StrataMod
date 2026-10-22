@@ -1,0 +1,12 @@
+{
+ "schema":"T25-Engram-independent/v1",
+ "small_state_restore":{"source":2,"ratio":2,"checkpoints":[1,2],"positions":4,"pending_allocation":8192,"cache_allocation":4096,"snapshot_bytes":[4096,2048],"holdouts":["A","B"],"payload_mutation_control":true,"G_Q_bits":"exact","new_normal_snapshot_API":false},
+ "tokens":[0,42,2,17,43,655,3,42],"mask":[true,true,false,true,true,true,true,true],
+ "official_files":[
+ {"layer":1,"file":"model-00047-of-00048.safetensors","bytes":101535150936,"lfs_sha256":"76a05106ece259be83d1bfea0dcb54f23377864ee60fd321690f35e6698a2af5","etag":"\"0cc6bcc44101f45959ce020963992b0239612e7c92eb238dcbb539a00d0ab40d\"","header_bytes":656,"header_sha256":"e5c5c7fc900caec400644bef07aa5d7e28fc6ca941c8c47592b393963b218242","q_start":101377629016},
+ {"layer":14,"file":"model-00048-of-00048.safetensors","bytes":101537926640,"lfs_sha256":"9dc51433e195bc78b5ad846b68643cc0351d3b174e5e4309222d3b7402c83afd","etag":"\"17aa278caa1e1e4412e8d7ab895642430f9d71f7fe6ff63e83096af5360b27f4\"","header_bytes":664,"header_sha256":"5d8fa4697d7a071c31baeee6947d493c08ea3243261c5d0f79c355ad191b8222","q_start":101380404720}],
+ "precision":{"N":"independent official q/k FP32 fusion exact; Decimal100 full HC square/sum/weighted dot/mean+eps/inverse/z/copysign/sigmoid/residual controlled math; real same-native-weight FP64 projection AND HC norm/dot/normalized-z conservative intervals, not full unquantized model quality","Q":"K ascending separate FP32 products/add from +0; IEEE denorm; no FMA; BF16 RNE; perHC5120 eps1e-20; copysign sqrt clamp1e-6; FP64exp then FP32sigmoid; final once BF16RNE","G":"all canonical stage bits exact; rawbytes exact","local_N_nonlinear_ULP":2},
+ "scope":"helper-first offline preparation only; actual0to1/20to24/state/wholeT25 pending",
+ "normal_audit_D2H":false,
+ "actual":{"ranges":[[0,2],[20,25],[2,4]],"positions":[0,1,2],"holdouts":{"A":[0,42,17],"B":[655,3,43]},"main_calls":18,"main_layer_evaluations":54,"fresh_A_replay_calls":9,"fresh_A_replay_layers":27,"total_G_calls":27,"total_G_layers":81,"context_fixture_capacity":3,"range0_pre":[1,0,0,0],"other_pre":[0.125,0.25,0.5,1],"image":false,"G_Q_maxabs":0,"G_Q_NRMSE":0,"G_Q_ULP":0,"raw_copy_added":0,"source8_14_actual_executed":false,"normal_embedding_full40_prefill_restore_qualified":false}
+}

@@ -1,0 +1,10 @@
+{
+  "schema": "T31-family-clients/v1",
+  "scope": "selected DeepSeek WebUI/chat adapter; legacy clients unchanged",
+  "sources": ["OWN/clients/stream_contract.py", "OWN/clients/chat_adapter.py", "OWN/clients/web_stream.js", "OWN/clients/package_clients.py", "OWN/tests/clients/contract.json", "OWN/tests/clients/test_clients.py", "OWN/tests/clients/test_web_stream.mjs", "OWN/tests/clients/build_verify.py", "DATA/strata_cli.py", "OWN/tests/providers/runtime_stage.py"],
+  "component_source_names": ["stream_contract.py", "chat_adapter.py", "web_stream.js", "contract.json", "test_clients.py", "test_web_stream.mjs", "build_verify.py", "upstream chat.py"],
+  "transport_complete": "formal finish for each selected choice plus DONE; usage absent is unknown",
+  "partial": "visible transient state; not committed as successful assistant/tool history",
+  "unknown": ["native_raw_ids_from_external_HTTP", "physical_IO", "performance", "newpackage_identity_until_fixed"],
+  "CPU_component_does_not_qualify": ["derived chat normal CLI/real provider integration", "derived WebUI integration", "browser interaction", "new versioned package", "public profile update", "actual provider SSE", "T30 completion", "T31 completion"]
+}

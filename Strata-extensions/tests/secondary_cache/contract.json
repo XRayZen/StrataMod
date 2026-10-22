@@ -1,0 +1,59 @@
+{
+  "schema": "strata-secondary-packed-cache/v1",
+  "scope": "production storage-only secondary packed tile cache and Primary execution",
+  "source": "qualified original SourceTensor and exact full-K SourceTile",
+  "primary_default": "single; unchanged Primary/Row budgets and model math",
+  "cache_role": "requested distinct physical PCI; no model arithmetic on secondary",
+  "ownership": "Primary Ready read-only lease to independent P working snapshot, then S fill; warm S to independent P working through actual consumer stream last-use",
+  "capacity": "caller payload bytes or measured available auto fraction, aligned 256-byte slots; explicit intent preserved, unavailable optional cache bypassed with reason",
+  "fallback": "known drained copy error uses independent Primary RAM/SSD slot; unknown cache retains entire bundle and requires known-safe Primary; source/shape/Primary errors preserve original failure",
+  "unit_types": [
+    39,
+    8
+  ],
+  "unit_rows": 8,
+  "unit_batch": 3,
+  "unit_slots": [
+    1,
+    2
+  ],
+  "unit_policies": [
+    "auto",
+    "bounce"
+  ],
+  "unit_outputs": 18,
+  "unit_values": 432,
+  "normal_fixture": {
+    "prompt_ids_source": "T28 sealed independent normal Q",
+    "context": 4096,
+    "max_tokens": 1,
+    "greedy": true,
+    "normal_limit": false
+  },
+  "driver_fault_forced": false,
+  "normal_fault_environment_or_API": false,
+  "physical_peak": null,
+  "whole_task_qualified": false,
+  "test_DRAM": {
+    "target_available_bytes": 8589934592,
+    "evaluation_band_bytes": [
+      8589934592,
+      9663676416
+    ],
+    "allocation_aim_available_bytes": 9126805504,
+    "reselect_before_capture_max": 2,
+    "normal_default_changed": false,
+    "unused_zero_initialized_cache_is_valid_model_payload": false,
+    "report_only": true,
+    "band_is_acceptance_gate": false,
+    "outside_band_refuses_GEN": false,
+    "numeric_result_independent": true,
+    "latest_user_instruction": "Approximate 8 GiB remaining; strictness not required; continue."
+  },
+  "logical_batch": 3,
+  "kernel_batch_waves": [
+    2,
+    1
+  ],
+  "kernel_wave_source": "existing Core batch_waves; full-K/output stride and all three accepted rows preserved"
+}
