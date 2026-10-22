@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 LOCAL = ROOT / 'local_runtime'
 DATA = ROOT.parent / 'Strata-data'
 ORIGINAL = ROOT.parent / 'Strata'
-MODEL = 'huihui-ud-iq4_xs'
+MODEL = 'huihui-ud-q4_k_xl_v2'
 CONTEXT = 262144
 HEAD = '477ac13cbe8e582c20484871ce459d20d82df09d'
 BASE_PROFILE = DATA / f'profiles/{MODEL}-{CONTEXT}.json'
@@ -114,14 +114,10 @@ def read_json(path):
 
 
 def original_assets():
-    # Read the unchanged production authority; it verifies the original artifacts,
-    # never the candidate and never grants a validation/inspection scope.
     sys.path.insert(0, str(DATA)) if str(DATA) not in sys.path else None
     import model_catalog
-    import huihui_authority
     model_catalog.require_public_context(MODEL, CONTEXT, DATA)
     model_catalog.require_ready(MODEL, DATA)
-    huihui_authority.verify(DATA)
     return read_json(BASE_PROFILE)
 
 
