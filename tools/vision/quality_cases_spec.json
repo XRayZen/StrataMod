@@ -1,0 +1,3156 @@
+{
+  "version": 2,
+  "status": "draft_not_execution_authority",
+  "plan_sha256": "c9d48523b36feaee44b3f87e6c43c489b2c0e88d3a34d73e75e577285e7c628e",
+  "scope": "Private fixture preparation only. No model/API/GPU/encoder/code-generation evaluation or CPU generated-code execution performed.",
+  "fixed_settings": {
+    "model": "huihui-ud-iq4_xs",
+    "context": 262144,
+    "parallel": 1,
+    "seed": 42,
+    "temperature": 0,
+    "top_k": 1,
+    "top_p": 1,
+    "min_p": 0,
+    "reasoning_effort": "none"
+  },
+  "counts": {
+    "cases": 80,
+    "by_group": {
+      "japanese": 20,
+      "strict_json": 20,
+      "tool": 10,
+      "stream": 5,
+      "cancel": 5,
+      "code": 10,
+      "long_recall": 10
+    },
+    "max_posts_per_quality_pass": 100
+  },
+  "scoring_rules": {
+    "extra_text": "Disallowed for exact-text and strict-JSON cases; strip outer whitespace only for exact-text",
+    "json": "Parse a single JSON document, reject duplicate keys and trailing prose, compare schema/types and expected value",
+    "code": "Only fixed small solve algorithms and vectors; generated code not yet produced or executed",
+    "intended_cancel": "Observable SSE trigger and posthoc cancellation/idle evidence; never native token-count inference",
+    "unexpected_failure": "Stop new POSTs, preserve partial evidence, use existing normal cleanup and LCR pending locks"
+  },
+  "pending": [
+    "Independent review of this draft including bodies/expected/scoring/code vectors",
+    "Real tokenizer/template expansion and input token counts/token SHA for all cases",
+    "Exact wire payloads/tool call IDs and API payload SHA",
+    "Long 18/72 percent insertion positions and exact target token lengths",
+    "Final source/config/environment/dependency/manifest binding and bounded execution approval"
+  ],
+  "cases": [
+    {
+      "id": "JP01",
+      "group": "japanese",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "列車は09:20に青葉駅を出発し、10:05に楓駅へ到着します。出発駅名だけを答えてください。"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "青葉駅",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "aefafb40669fe4c2c7c862f1a800c8a26e9c8fe34ec999bbb2779a43e4a0c3ff"
+    },
+    {
+      "id": "JP02",
+      "group": "japanese",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "列車は09:20に青葉駅を出発し、10:05に楓駅へ到着します。到着時刻だけをHH:MMで答えてください。"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "10:05",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "b0507974cf9e349c04c5593434559cdc0c5995da54416afcad67728299e2046b"
+    },
+    {
+      "id": "JP03",
+      "group": "japanese",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "品物は先頭から「青い箱、赤い箱、緑の箱」です。2番目の品物名だけを答えてください。"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "赤い箱",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "b1c759e89d2fde55253e24f93164a89df58367ee162162e4669b4aad9187fc68"
+    },
+    {
+      "id": "JP04",
+      "group": "japanese",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "犬は猫より先に到着しました。猫は鳥より先に到着しました。最初に到着した動物名だけを答えてください。"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "犬",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "3788b5f55d84bacc1edff06edcec91559c3bc8d805c66fc21d0ebbc71ec5b9c8"
+    },
+    {
+      "id": "JP05",
+      "group": "japanese",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "店は水曜日だけ定休日です。金曜日は営業日ですか。「はい」か「いいえ」だけで答えてください。"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "はい",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "ae0cee65caad9936e537b7311eab0b17f86aa8794a1fa079394c8834b0f84277"
+    },
+    {
+      "id": "JP06",
+      "group": "japanese",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "雨なら試合は中止です。今日は雨です。試合は「実施」か「中止」か、その語だけを答えてください。"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "中止",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "c20b9f6ad456ceb64a383aa6574daf650db2f4c38180c08eaceca0b95b4646a9"
+    },
+    {
+      "id": "JP07",
+      "group": "japanese",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "鉛筆を120円、消しゴムを80円で買いました。合計金額を単位なしの整数だけで答えてください。"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "200",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "3c10d7d702b8cd72f4e75a62c2e427c7c996e5f010525bb39a2c63a83a3a3dcb"
+    },
+    {
+      "id": "JP08",
+      "group": "japanese",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "1箱に4個の飴が入っています。3箱では全部で何個ですか。単位なしの整数だけで答えてください。"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "12",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "1aeb7946560440533e0d7afc44758056549fdc4df63648e33e8201cf680dead8"
+    },
+    {
+      "id": "JP09",
+      "group": "japanese",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "Aは250点、Bは180点、Cは300点です。最高得点者の記号だけを答えてください。"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "C",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "30d678b24d0268be057c53567070ec36011c485800a1d5858653bc2cc8dee6f5"
+    },
+    {
+      "id": "JP10",
+      "group": "japanese",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "一覧は1、2、3、4、5です。奇数の個数を整数だけで答えてください。"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "3",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "5689dd735f31468b4e05336ccd37443ee2a0844bb13e9e74b50d3303fe2ec393"
+    },
+    {
+      "id": "JP11",
+      "group": "japanese",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "資料ではdogの日本語訳は「犬」、catの日本語訳は「猫」です。dogの訳語だけを答えてください。"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "犬",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "a4c346b18e7f214179f10b38670be3f3eb7e8cb94403dbdc978fa2c420b210cb"
+    },
+    {
+      "id": "JP12",
+      "group": "japanese",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "カタカナの「ネコ」をひらがなに直してください。他の文字を付けないでください。"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "ねこ",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "5a7a24125a5a5390c6b9308943e672cc1795883210c88a52934a5e65bc49b7e4"
+    },
+    {
+      "id": "JP13",
+      "group": "japanese",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "文字列「ねこ」を文字単位で逆順にして答えてください。他の文字を付けないでください。"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "こね",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "cdf97bb9fc26a99cb2b80d2e6842eb5b44a2697a8aca7ed950a3ebddc1843871"
+    },
+    {
+      "id": "JP14",
+      "group": "japanese",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "数字3を漢数字1文字で答えてください。"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "三",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "ba2235d7f8d64d7c0d50d28eea7058aacc0957bf267dc85a10a73cbf35e72916"
+    },
+    {
+      "id": "JP15",
+      "group": "japanese",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "資料には「商品の色は赤」とだけあります。商品の重量を聞かれました。資料にない場合は「資料にない」だけを答えてください。"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "資料にない",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "8b4afd40ef1d1e51e17fe4f3e580b01a70b7a6a6ea561e58e128658238a500ce"
+    },
+    {
+      "id": "JP16",
+      "group": "japanese",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "花子は青い本を、太郎は赤い本を持っています。花子の本の色だけを答えてください。"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "青",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "c17f22d4e3ffa7fdc93305ca3bee1de98f51e1af19c2ed3e213aaa9124d7841b"
+    },
+    {
+      "id": "JP17",
+      "group": "japanese",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "在庫は10個でした。3個出荷し、その後2個入荷しました。現在の在庫を整数だけで答えてください。"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "9",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "d96fed9c550d962b586a317a07f4d9d18780b4f41a850439409b7cb729df4ff0"
+    },
+    {
+      "id": "JP18",
+      "group": "japanese",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "「2026年10月18日」をYYYY-MM-DD形式で答えてください。他の文字を付けないでください。"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "2026-10-18",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "b3fbb243fda525ecedded7354d77bea73831f3b2d629b6a97c8f2e4d7ef80ecb"
+    },
+    {
+      "id": "JP19",
+      "group": "japanese",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "赤チームは勝ち、青チームは負けではありません。勝ったと明記されているチーム名だけを答えてください。"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "赤チーム",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "4ba3bb5591a1a1a68b4545008939339773b7007f9c826def1f66f0482186e6ef"
+    },
+    {
+      "id": "JP20",
+      "group": "japanese",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "次の要約候補のうち本文に合う記号だけを答えてください。本文:配送は雨で1日遅れたが、商品は破損なく届いた。A:商品は破損した。B:商品は無事に届いたが配送は遅れた。C:配送は中止された。"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "B",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "7eb2d06f4515b7507b8c1d15e3e176c13fedb1255214b3316676fe471723e8db"
+    },
+    {
+      "id": "JS01",
+      "group": "strict_json",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "prompt": "名前は青葉、個数は3です。キーnameとcountを使ってください。 JSONオブジェクトだけを返してください。説明やコードフェンスは禁止です。"
+      },
+      "scoring": {
+        "method": "single_json_document_no_duplicate_keys_schema_and_expected_value",
+        "expected": {
+          "name": "青葉",
+          "count": 3
+        },
+        "schema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "count": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "name",
+            "count"
+          ],
+          "additionalProperties": false
+        },
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "48e29267cb73892bebbc6f0d9de1b261247dbebe5c0cc3bf6194390e9220a79d"
+    },
+    {
+      "id": "JS02",
+      "group": "strict_json",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "prompt": "成功を表すokはtrue、reasonはnullにしてください。 JSONオブジェクトだけを返してください。説明やコードフェンスは禁止です。"
+      },
+      "scoring": {
+        "method": "single_json_document_no_duplicate_keys_schema_and_expected_value",
+        "expected": {
+          "ok": true,
+          "reason": null
+        },
+        "schema": {
+          "type": "object",
+          "properties": {
+            "ok": {
+              "type": "boolean"
+            },
+            "reason": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "ok",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "fe2988702b883527ea85af2a4a836a1cf9d0d67a976672fde8c993518769fc1e"
+    },
+    {
+      "id": "JS03",
+      "group": "strict_json",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "prompt": "itemsは順序を変えず整数3、1、2の配列にしてください。 JSONオブジェクトだけを返してください。説明やコードフェンスは禁止です。"
+      },
+      "scoring": {
+        "method": "single_json_document_no_duplicate_keys_schema_and_expected_value",
+        "expected": {
+          "items": [
+            3,
+            1,
+            2
+          ]
+        },
+        "schema": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "minItems": 3,
+              "maxItems": 3
+            }
+          },
+          "required": [
+            "items"
+          ],
+          "additionalProperties": false
+        },
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "652842f59591fec3cf08c7ce9df4d7370410f1b49a6093b99d8f06b62ac97d18"
+    },
+    {
+      "id": "JS04",
+      "group": "strict_json",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "prompt": "userの中にid=7、active=falseを入れてください。 JSONオブジェクトだけを返してください。説明やコードフェンスは禁止です。"
+      },
+      "scoring": {
+        "method": "single_json_document_no_duplicate_keys_schema_and_expected_value",
+        "expected": {
+          "user": {
+            "id": 7,
+            "active": false
+          }
+        },
+        "schema": {
+          "type": "object",
+          "properties": {
+            "user": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "active": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "active"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "user"
+          ],
+          "additionalProperties": false
+        },
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "ac079b5414648b25bde374ab908b51166bbfc8519eaa5b5c1416f443f30a61bc"
+    },
+    {
+      "id": "JS05",
+      "group": "strict_json",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "prompt": "textには彼は「はい」と言ったという文字列を入れてください。 JSONオブジェクトだけを返してください。説明やコードフェンスは禁止です。"
+      },
+      "scoring": {
+        "method": "single_json_document_no_duplicate_keys_schema_and_expected_value",
+        "expected": {
+          "text": "彼は「はい」と言った"
+        },
+        "schema": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "e31d800c28de77299f2eb9628845a3d0ba65b8752c03bca6bde1009e52f959f0"
+    },
+    {
+      "id": "JS06",
+      "group": "strict_json",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "prompt": "textには小文字a、半角ダブルクォート、小文字bの3文字を入れてください。 JSONオブジェクトだけを返してください。説明やコードフェンスは禁止です。"
+      },
+      "scoring": {
+        "method": "single_json_document_no_duplicate_keys_schema_and_expected_value",
+        "expected": {
+          "text": "a\"b"
+        },
+        "schema": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "3804e5095148f67f8e2deab4c5843913aed5e931d832d46908236f2790594feb"
+    },
+    {
+      "id": "JS07",
+      "group": "strict_json",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "prompt": "pathには小文字a、バックスラッシュ1個、小文字bの3文字を入れてください。 JSONオブジェクトだけを返してください。説明やコードフェンスは禁止です。"
+      },
+      "scoring": {
+        "method": "single_json_document_no_duplicate_keys_schema_and_expected_value",
+        "expected": {
+          "path": "a\\b"
+        },
+        "schema": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "additionalProperties": false
+        },
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "0e6aa3dd2957b2b87e752f5404c436049b85ff511833af0ada7f0e058fd8ad34"
+    },
+    {
+      "id": "JS08",
+      "group": "strict_json",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "prompt": "textには上、改行1個、下の順の文字列を入れてください。 JSONオブジェクトだけを返してください。説明やコードフェンスは禁止です。"
+      },
+      "scoring": {
+        "method": "single_json_document_no_duplicate_keys_schema_and_expected_value",
+        "expected": {
+          "text": "上\n下"
+        },
+        "schema": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "a6e0d43975286b2e8703cad0a3e651f5f01405689689ea7cf88f5cbbe6a3b7fd"
+    },
+    {
+      "id": "JS09",
+      "group": "strict_json",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "prompt": "emptyには空配列を入れてください。 JSONオブジェクトだけを返してください。説明やコードフェンスは禁止です。"
+      },
+      "scoring": {
+        "method": "single_json_document_no_duplicate_keys_schema_and_expected_value",
+        "expected": {
+          "empty": []
+        },
+        "schema": {
+          "type": "object",
+          "properties": {
+            "empty": {
+              "type": "array",
+              "minItems": 0,
+              "maxItems": 0
+            }
+          },
+          "required": [
+            "empty"
+          ],
+          "additionalProperties": false
+        },
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "7f999975f04a2d9843625b8dcd60f5334d87bcaf81875fa8ca992efeb279225c"
+    },
+    {
+      "id": "JS10",
+      "group": "strict_json",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "prompt": "emptyには空オブジェクトを入れてください。 JSONオブジェクトだけを返してください。説明やコードフェンスは禁止です。"
+      },
+      "scoring": {
+        "method": "single_json_document_no_duplicate_keys_schema_and_expected_value",
+        "expected": {
+          "empty": {}
+        },
+        "schema": {
+          "type": "object",
+          "properties": {
+            "empty": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "empty"
+          ],
+          "additionalProperties": false
+        },
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "4ff9f4a01292519662355a0852ca4b343c3867ef078daacb21d0e4d1ff68e633"
+    },
+    {
+      "id": "JS11",
+      "group": "strict_json",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "prompt": "valueには負の整数-5を入れてください。 JSONオブジェクトだけを返してください。説明やコードフェンスは禁止です。"
+      },
+      "scoring": {
+        "method": "single_json_document_no_duplicate_keys_schema_and_expected_value",
+        "expected": {
+          "value": -5
+        },
+        "schema": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "518185cd78d9ab4d917aad77c58cf0f552341a01b3fe158cd652d938ebefad9b"
+    },
+    {
+      "id": "JS12",
+      "group": "strict_json",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "prompt": "valueには数値1.25を入れてください。 JSONオブジェクトだけを返してください。説明やコードフェンスは禁止です。"
+      },
+      "scoring": {
+        "method": "single_json_document_no_duplicate_keys_schema_and_expected_value",
+        "expected": {
+          "value": 1.25
+        },
+        "schema": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "90821a68f6af285ad017daafe6f49e9fa137aed14af09e29fdb7bde4beb7eabd"
+    },
+    {
+      "id": "JS13",
+      "group": "strict_json",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "prompt": "tagsには赤と青をこの順に文字列配列で入れてください。 JSONオブジェクトだけを返してください。説明やコードフェンスは禁止です。"
+      },
+      "scoring": {
+        "method": "single_json_document_no_duplicate_keys_schema_and_expected_value",
+        "expected": {
+          "tags": [
+            "赤",
+            "青"
+          ]
+        },
+        "schema": {
+          "type": "object",
+          "properties": {
+            "tags": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "tags"
+          ],
+          "additionalProperties": false
+        },
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "a98425d233d37b0b37bdbba6c73ff090b6367aa895e9b1ad2c6176d499414e64"
+    },
+    {
+      "id": "JS14",
+      "group": "strict_json",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "prompt": "aはnull、bはfalseにしてください。 JSONオブジェクトだけを返してください。説明やコードフェンスは禁止です。"
+      },
+      "scoring": {
+        "method": "single_json_document_no_duplicate_keys_schema_and_expected_value",
+        "expected": {
+          "a": null,
+          "b": false
+        },
+        "schema": {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "null"
+            },
+            "b": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "a",
+            "b"
+          ],
+          "additionalProperties": false
+        },
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "f421966d80394d81812a0802a15a14b7ba02ce60c0e017c560a82bf33e91c632"
+    },
+    {
+      "id": "JS15",
+      "group": "strict_json",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "prompt": "zeroは数値0、labelは文字列0にしてください。 JSONオブジェクトだけを返してください。説明やコードフェンスは禁止です。"
+      },
+      "scoring": {
+        "method": "single_json_document_no_duplicate_keys_schema_and_expected_value",
+        "expected": {
+          "zero": 0,
+          "label": "0"
+        },
+        "schema": {
+          "type": "object",
+          "properties": {
+            "zero": {
+              "type": "integer"
+            },
+            "label": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "zero",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "adda1e535dd485577c9178141a3a14a1b8e3ea79bf2ef1d6eacde794619c1be7"
+    },
+    {
+      "id": "JS16",
+      "group": "strict_json",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "prompt": "rowsにはidが1のオブジェクトとidが2のオブジェクトをこの順に入れてください。 JSONオブジェクトだけを返してください。説明やコードフェンスは禁止です。"
+      },
+      "scoring": {
+        "method": "single_json_document_no_duplicate_keys_schema_and_expected_value",
+        "expected": {
+          "rows": [
+            {
+              "id": 1
+            },
+            {
+              "id": 2
+            }
+          ]
+        },
+        "schema": {
+          "type": "object",
+          "properties": {
+            "rows": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "additionalProperties": false
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "rows"
+          ],
+          "additionalProperties": false
+        },
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "5fca5a36e516560afee19f48669238725e8754ff9b5781fd41e691d22c533675"
+    },
+    {
+      "id": "JS17",
+      "group": "strict_json",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "prompt": "aには数値1と、数値2と3の配列を、この順に入れてください。 JSONオブジェクトだけを返してください。説明やコードフェンスは禁止です。"
+      },
+      "scoring": {
+        "method": "single_json_document_no_duplicate_keys_schema_and_expected_value",
+        "expected": {
+          "a": [
+            1,
+            [
+              2,
+              3
+            ]
+          ]
+        },
+        "schema": {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "integer"
+                    }
+                  ],
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "a"
+          ],
+          "additionalProperties": false
+        },
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "3eba090286f6645f5032a1aa13d52c2605556fd8434868eeb058437e22583952"
+    },
+    {
+      "id": "JS18",
+      "group": "strict_json",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "prompt": "messageには絵文字🙂を1個入れてください。 JSONオブジェクトだけを返してください。説明やコードフェンスは禁止です。"
+      },
+      "scoring": {
+        "method": "single_json_document_no_duplicate_keys_schema_and_expected_value",
+        "expected": {
+          "message": "🙂"
+        },
+        "schema": {
+          "type": "object",
+          "properties": {
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "message"
+          ],
+          "additionalProperties": false
+        },
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "4aefc7ebb5ae1b9a6859bb0196e20356cd253139b07fc549bea5e07c6eaae6b8"
+    },
+    {
+      "id": "JS19",
+      "group": "strict_json",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "prompt": "enabledはtrue、countは0、noteは空文字列にしてください。 JSONオブジェクトだけを返してください。説明やコードフェンスは禁止です。"
+      },
+      "scoring": {
+        "method": "single_json_document_no_duplicate_keys_schema_and_expected_value",
+        "expected": {
+          "enabled": true,
+          "count": 0,
+          "note": ""
+        },
+        "schema": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "count": {
+              "type": "integer"
+            },
+            "note": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "enabled",
+            "count",
+            "note"
+          ],
+          "additionalProperties": false
+        },
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "cf0b6a91e3ae69329162341168e70171254645ddee2483fa4137d427a1831804"
+    },
+    {
+      "id": "JS20",
+      "group": "strict_json",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "prompt": "resultの中のsumは12、valuesは5と7の配列にしてください。 JSONオブジェクトだけを返してください。説明やコードフェンスは禁止です。"
+      },
+      "scoring": {
+        "method": "single_json_document_no_duplicate_keys_schema_and_expected_value",
+        "expected": {
+          "result": {
+            "sum": 12,
+            "values": [
+              5,
+              7
+            ]
+          }
+        },
+        "schema": {
+          "type": "object",
+          "properties": {
+            "result": {
+              "type": "object",
+              "properties": {
+                "sum": {
+                  "type": "integer"
+                },
+                "values": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "integer"
+                    }
+                  ],
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              },
+              "required": [
+                "sum",
+                "values"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "result"
+          ],
+          "additionalProperties": false
+        },
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "0f24bc9332bc5aedbd1d4fa62981f0fb84ee3c3d6f9dc12d152891ede7c54dec"
+    },
+    {
+      "id": "TL01",
+      "group": "tool",
+      "max_posts": 2,
+      "max_tokens_per_post": 128,
+      "body": {
+        "first_prompt": "7と5を足してください。add_numbersを呼んでください。",
+        "tool_definition": {
+          "type": "function",
+          "function": {
+            "name": "add_numbers",
+            "description": "この品質caseだけの固定fixture。外部操作をしない。",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "integer"
+                },
+                "b": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "a",
+                "b"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "tool_choice": {
+          "type": "function",
+          "function": {
+            "name": "add_numbers"
+          }
+        },
+        "fixed_tool_result": {
+          "sum": 12
+        },
+        "continuation_prompt": "sumを数字だけで答えてください。",
+        "tool_call_id_binding": "Use actual returned call ID at prepare/execution; wire payload SHA pending"
+      },
+      "scoring": {
+        "first": {
+          "tool_name": "add_numbers",
+          "arguments": {
+            "a": 7,
+            "b": 5
+          },
+          "tool_call_count": 1,
+          "method": "exact_tool_name_and_parsed_argument_object"
+        },
+        "second": {
+          "method": "exact_text_after_outer_whitespace_strip",
+          "expected": "12",
+          "extra_text_allowed": false
+        }
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "tool_execution": "Fixture result only; no email, booking, network or other external tool is executed",
+      "case_spec_sha256": "1a2c5754d663ec7b4a1ed701db649fcfe4cbfcbfcd997dcf1dabe99ccb4a6d67"
+    },
+    {
+      "id": "TL02",
+      "group": "tool",
+      "max_posts": 2,
+      "max_tokens_per_post": 128,
+      "body": {
+        "first_prompt": "SKU RED-PENCILの在庫をlookup_stockで調べてください。",
+        "tool_definition": {
+          "type": "function",
+          "function": {
+            "name": "lookup_stock",
+            "description": "この品質caseだけの固定fixture。外部操作をしない。",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "sku": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "sku"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "tool_choice": {
+          "type": "function",
+          "function": {
+            "name": "lookup_stock"
+          }
+        },
+        "fixed_tool_result": {
+          "quantity": 7
+        },
+        "continuation_prompt": "quantityを数字だけで答えてください。",
+        "tool_call_id_binding": "Use actual returned call ID at prepare/execution; wire payload SHA pending"
+      },
+      "scoring": {
+        "first": {
+          "tool_name": "lookup_stock",
+          "arguments": {
+            "sku": "RED-PENCIL"
+          },
+          "tool_call_count": 1,
+          "method": "exact_tool_name_and_parsed_argument_object"
+        },
+        "second": {
+          "method": "exact_text_after_outer_whitespace_strip",
+          "expected": "7",
+          "extra_text_allowed": false
+        }
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "tool_execution": "Fixture result only; no email, booking, network or other external tool is executed",
+      "case_spec_sha256": "058ee6a8e958db86704eca76e4f4e4ea88656b59b462bb15b12d40fbc9307a00"
+    },
+    {
+      "id": "TL03",
+      "group": "tool",
+      "max_posts": 2,
+      "max_tokens_per_post": 128,
+      "body": {
+        "first_prompt": "東都の2026-10-18の気温をget_weatherで調べてください。",
+        "tool_definition": {
+          "type": "function",
+          "function": {
+            "name": "get_weather",
+            "description": "この品質caseだけの固定fixture。外部操作をしない。",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "city": {
+                  "type": "string"
+                },
+                "date": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "city",
+                "date"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "tool_choice": {
+          "type": "function",
+          "function": {
+            "name": "get_weather"
+          }
+        },
+        "fixed_tool_result": {
+          "temperature_c": 21
+        },
+        "continuation_prompt": "temperature_cを数字だけで答えてください。",
+        "tool_call_id_binding": "Use actual returned call ID at prepare/execution; wire payload SHA pending"
+      },
+      "scoring": {
+        "first": {
+          "tool_name": "get_weather",
+          "arguments": {
+            "city": "東都",
+            "date": "2026-10-18"
+          },
+          "tool_call_count": 1,
+          "method": "exact_tool_name_and_parsed_argument_object"
+        },
+        "second": {
+          "method": "exact_text_after_outer_whitespace_strip",
+          "expected": "21",
+          "extra_text_allowed": false
+        }
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "tool_execution": "Fixture result only; no email, booking, network or other external tool is executed",
+      "case_spec_sha256": "40f7c7047f698a9b1a16f477a95fdd7db5b37841338ba1c01b4d4f1a325221fd"
+    },
+    {
+      "id": "TL04",
+      "group": "tool",
+      "max_posts": 2,
+      "max_tokens_per_post": 128,
+      "body": {
+        "first_prompt": "250センチメートルをメートルへconvert_lengthで換算してください。",
+        "tool_definition": {
+          "type": "function",
+          "function": {
+            "name": "convert_length",
+            "description": "この品質caseだけの固定fixture。外部操作をしない。",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "centimeters": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "centimeters"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "tool_choice": {
+          "type": "function",
+          "function": {
+            "name": "convert_length"
+          }
+        },
+        "fixed_tool_result": {
+          "meters": 2.5
+        },
+        "continuation_prompt": "metersを数字だけで答えてください。",
+        "tool_call_id_binding": "Use actual returned call ID at prepare/execution; wire payload SHA pending"
+      },
+      "scoring": {
+        "first": {
+          "tool_name": "convert_length",
+          "arguments": {
+            "centimeters": 250
+          },
+          "tool_call_count": 1,
+          "method": "exact_tool_name_and_parsed_argument_object"
+        },
+        "second": {
+          "method": "exact_text_after_outer_whitespace_strip",
+          "expected": "2.5",
+          "extra_text_allowed": false
+        }
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "tool_execution": "Fixture result only; no email, booking, network or other external tool is executed",
+      "case_spec_sha256": "7ed898ddc5886b8c94d925ee4f780a4eee66f41a9010dcddabea4e41e9fdf79f"
+    },
+    {
+      "id": "TL05",
+      "group": "tool",
+      "max_posts": 2,
+      "max_tokens_per_post": 128,
+      "body": {
+        "first_prompt": "2026-10-20の14:30をreserve_slotで予約してください。",
+        "tool_definition": {
+          "type": "function",
+          "function": {
+            "name": "reserve_slot",
+            "description": "この品質caseだけの固定fixture。外部操作をしない。",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string"
+                },
+                "time": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "date",
+                "time"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "tool_choice": {
+          "type": "function",
+          "function": {
+            "name": "reserve_slot"
+          }
+        },
+        "fixed_tool_result": {
+          "reservation_id": "R001"
+        },
+        "continuation_prompt": "reservation_idだけを答えてください。",
+        "tool_call_id_binding": "Use actual returned call ID at prepare/execution; wire payload SHA pending"
+      },
+      "scoring": {
+        "first": {
+          "tool_name": "reserve_slot",
+          "arguments": {
+            "date": "2026-10-20",
+            "time": "14:30"
+          },
+          "tool_call_count": 1,
+          "method": "exact_tool_name_and_parsed_argument_object"
+        },
+        "second": {
+          "method": "exact_text_after_outer_whitespace_strip",
+          "expected": "R001",
+          "extra_text_allowed": false
+        }
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "tool_execution": "Fixture result only; no email, booking, network or other external tool is executed",
+      "case_spec_sha256": "0127d77774a734098f8c37c3b702d030e3b9f9a6a2cfae73691b0d5f9cb6b4e0"
+    },
+    {
+      "id": "TL06",
+      "group": "tool",
+      "max_posts": 2,
+      "max_tokens_per_post": 128,
+      "body": {
+        "first_prompt": "佐藤の連絡先をfind_contactで調べてください。",
+        "tool_definition": {
+          "type": "function",
+          "function": {
+            "name": "find_contact",
+            "description": "この品質caseだけの固定fixture。外部操作をしない。",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "tool_choice": {
+          "type": "function",
+          "function": {
+            "name": "find_contact"
+          }
+        },
+        "fixed_tool_result": {
+          "email": "sato@example.invalid"
+        },
+        "continuation_prompt": "emailだけを答えてください。",
+        "tool_call_id_binding": "Use actual returned call ID at prepare/execution; wire payload SHA pending"
+      },
+      "scoring": {
+        "first": {
+          "tool_name": "find_contact",
+          "arguments": {
+            "name": "佐藤"
+          },
+          "tool_call_count": 1,
+          "method": "exact_tool_name_and_parsed_argument_object"
+        },
+        "second": {
+          "method": "exact_text_after_outer_whitespace_strip",
+          "expected": "sato@example.invalid",
+          "extra_text_allowed": false
+        }
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "tool_execution": "Fixture result only; no email, booking, network or other external tool is executed",
+      "case_spec_sha256": "a8009409faa5ce1c71d0c11c6825ba85aeabd435962602b82ba5b284adbc4744"
+    },
+    {
+      "id": "TL07",
+      "group": "tool",
+      "max_posts": 2,
+      "max_tokens_per_post": 128,
+      "body": {
+        "first_prompt": "価格が100以上の品物をfilter_productsで検索してください。",
+        "tool_definition": {
+          "type": "function",
+          "function": {
+            "name": "filter_products",
+            "description": "この品質caseだけの固定fixture。外部操作をしない。",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "minimum_price": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "minimum_price"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "tool_choice": {
+          "type": "function",
+          "function": {
+            "name": "filter_products"
+          }
+        },
+        "fixed_tool_result": {
+          "ids": [
+            "B",
+            "C"
+          ]
+        },
+        "continuation_prompt": "idsを順序そのまま半角カンマ区切りだけで答えてください。",
+        "tool_call_id_binding": "Use actual returned call ID at prepare/execution; wire payload SHA pending"
+      },
+      "scoring": {
+        "first": {
+          "tool_name": "filter_products",
+          "arguments": {
+            "minimum_price": 100
+          },
+          "tool_call_count": 1,
+          "method": "exact_tool_name_and_parsed_argument_object"
+        },
+        "second": {
+          "method": "exact_text_after_outer_whitespace_strip",
+          "expected": "B,C",
+          "extra_text_allowed": false
+        }
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "tool_execution": "Fixture result only; no email, booking, network or other external tool is executed",
+      "case_spec_sha256": "679f02b1a2d44fd939757e33eb6478ac29fb419ae11f154ec486c2f2beff1caf"
+    },
+    {
+      "id": "TL08",
+      "group": "tool",
+      "max_posts": 2,
+      "max_tokens_per_post": 128,
+      "body": {
+        "first_prompt": "青葉から楓までの所要分数をroute_minutesで調べてください。",
+        "tool_definition": {
+          "type": "function",
+          "function": {
+            "name": "route_minutes",
+            "description": "この品質caseだけの固定fixture。外部操作をしない。",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "origin": {
+                  "type": "string"
+                },
+                "destination": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "origin",
+                "destination"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "tool_choice": {
+          "type": "function",
+          "function": {
+            "name": "route_minutes"
+          }
+        },
+        "fixed_tool_result": {
+          "minutes": 18
+        },
+        "continuation_prompt": "minutesを数字だけで答えてください。",
+        "tool_call_id_binding": "Use actual returned call ID at prepare/execution; wire payload SHA pending"
+      },
+      "scoring": {
+        "first": {
+          "tool_name": "route_minutes",
+          "arguments": {
+            "origin": "青葉",
+            "destination": "楓"
+          },
+          "tool_call_count": 1,
+          "method": "exact_tool_name_and_parsed_argument_object"
+        },
+        "second": {
+          "method": "exact_text_after_outer_whitespace_strip",
+          "expected": "18",
+          "extra_text_allowed": false
+        }
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "tool_execution": "Fixture result only; no email, booking, network or other external tool is executed",
+      "case_spec_sha256": "ffe37aa48f205f52b8204325042943b0f2b21e2a166222d6e8245f20ba749311"
+    },
+    {
+      "id": "TL09",
+      "group": "tool",
+      "max_posts": 2,
+      "max_tokens_per_post": 128,
+      "body": {
+        "first_prompt": "幅3、高さ7の長方形の面積をrectangle_areaで計算してください。",
+        "tool_definition": {
+          "type": "function",
+          "function": {
+            "name": "rectangle_area",
+            "description": "この品質caseだけの固定fixture。外部操作をしない。",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "width": {
+                  "type": "integer"
+                },
+                "height": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "width",
+                "height"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "tool_choice": {
+          "type": "function",
+          "function": {
+            "name": "rectangle_area"
+          }
+        },
+        "fixed_tool_result": {
+          "area": 21
+        },
+        "continuation_prompt": "areaを数字だけで答えてください。",
+        "tool_call_id_binding": "Use actual returned call ID at prepare/execution; wire payload SHA pending"
+      },
+      "scoring": {
+        "first": {
+          "tool_name": "rectangle_area",
+          "arguments": {
+            "width": 3,
+            "height": 7
+          },
+          "tool_call_count": 1,
+          "method": "exact_tool_name_and_parsed_argument_object"
+        },
+        "second": {
+          "method": "exact_text_after_outer_whitespace_strip",
+          "expected": "21",
+          "extra_text_allowed": false
+        }
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "tool_execution": "Fixture result only; no email, booking, network or other external tool is executed",
+      "case_spec_sha256": "3a2c72ce6aa256891720d8a7e42e6fa4505252286bf63652d68fb7be2f378433"
+    },
+    {
+      "id": "TL10",
+      "group": "tool",
+      "max_posts": 2,
+      "max_tokens_per_post": 128,
+      "body": {
+        "first_prompt": "注文O009の状態をorder_statusで調べてください。",
+        "tool_definition": {
+          "type": "function",
+          "function": {
+            "name": "order_status",
+            "description": "この品質caseだけの固定fixture。外部操作をしない。",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "tool_choice": {
+          "type": "function",
+          "function": {
+            "name": "order_status"
+          }
+        },
+        "fixed_tool_result": {
+          "status": "発送済み"
+        },
+        "continuation_prompt": "statusだけを答えてください。",
+        "tool_call_id_binding": "Use actual returned call ID at prepare/execution; wire payload SHA pending"
+      },
+      "scoring": {
+        "first": {
+          "tool_name": "order_status",
+          "arguments": {
+            "order_id": "O009"
+          },
+          "tool_call_count": 1,
+          "method": "exact_tool_name_and_parsed_argument_object"
+        },
+        "second": {
+          "method": "exact_text_after_outer_whitespace_strip",
+          "expected": "発送済み",
+          "extra_text_allowed": false
+        }
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "tool_execution": "Fixture result only; no email, booking, network or other external tool is executed",
+      "case_spec_sha256": "e99550d1488f40ff0987dcf80c069740330b3f06b5ede51c3ac5e25d6ecaf713"
+    },
+    {
+      "id": "ST01",
+      "group": "stream",
+      "max_posts": 2,
+      "max_tokens_per_post": 128,
+      "body": {
+        "first_prompt": "次の文字列をそのまま返してください。前後に説明を付けないでください。\n青葉",
+        "first_stream": true,
+        "second_prompt": "接続確認として確認01だけを返してください。",
+        "second_stream": true
+      },
+      "scoring": {
+        "first": {
+          "method": "SSE_reassemble_content_exact_text_and_valid_terminal",
+          "expected": "青葉",
+          "utf8_complete": true,
+          "terminal_required": true
+        },
+        "second": {
+          "method": "exact_text_after_outer_whitespace_strip",
+          "expected": "確認01",
+          "extra_text_allowed": false
+        }
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "a4a17b49e662470891f3e70f7c66cea3115dcadc27bed8cfee93e1d6672e692e"
+    },
+    {
+      "id": "ST02",
+      "group": "stream",
+      "max_posts": 2,
+      "max_tokens_per_post": 128,
+      "body": {
+        "first_prompt": "次の文字列をそのまま返してください。前後に説明を付けないでください。\nABCD1234",
+        "first_stream": true,
+        "second_prompt": "接続確認として確認02だけを返してください。",
+        "second_stream": true
+      },
+      "scoring": {
+        "first": {
+          "method": "SSE_reassemble_content_exact_text_and_valid_terminal",
+          "expected": "ABCD1234",
+          "utf8_complete": true,
+          "terminal_required": true
+        },
+        "second": {
+          "method": "exact_text_after_outer_whitespace_strip",
+          "expected": "確認02",
+          "extra_text_allowed": false
+        }
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "e6ce7c6d3b479899df87f7871f2679e54111cfd76fba37ffbbf4c2032354d730"
+    },
+    {
+      "id": "ST03",
+      "group": "stream",
+      "max_posts": 2,
+      "max_tokens_per_post": 128,
+      "body": {
+        "first_prompt": "次の文字列をそのまま返してください。前後に説明を付けないでください。\n赤|青|緑",
+        "first_stream": true,
+        "second_prompt": "接続確認として確認03だけを返してください。",
+        "second_stream": true
+      },
+      "scoring": {
+        "first": {
+          "method": "SSE_reassemble_content_exact_text_and_valid_terminal",
+          "expected": "赤|青|緑",
+          "utf8_complete": true,
+          "terminal_required": true
+        },
+        "second": {
+          "method": "exact_text_after_outer_whitespace_strip",
+          "expected": "確認03",
+          "extra_text_allowed": false
+        }
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "3cec8fbeecf7056bf4b8ce91acbe815a2d7abc57ef8b29dff10be09c9e5449b7"
+    },
+    {
+      "id": "ST04",
+      "group": "stream",
+      "max_posts": 2,
+      "max_tokens_per_post": 128,
+      "body": {
+        "first_prompt": "次の文字列をそのまま返してください。前後に説明を付けないでください。\n🙂→日本語→END",
+        "first_stream": true,
+        "second_prompt": "接続確認として確認04だけを返してください。",
+        "second_stream": true
+      },
+      "scoring": {
+        "first": {
+          "method": "SSE_reassemble_content_exact_text_and_valid_terminal",
+          "expected": "🙂→日本語→END",
+          "utf8_complete": true,
+          "terminal_required": true
+        },
+        "second": {
+          "method": "exact_text_after_outer_whitespace_strip",
+          "expected": "確認04",
+          "extra_text_allowed": false
+        }
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "59500fd04ee987b8e168a27dd7beebd7d4547e53a631b6b0ce0232ef630e64cf"
+    },
+    {
+      "id": "ST05",
+      "group": "stream",
+      "max_posts": 2,
+      "max_tokens_per_post": 128,
+      "body": {
+        "first_prompt": "次の文字列をそのまま返してください。前後に説明を付けないでください。\n一行目\n二行目",
+        "first_stream": true,
+        "second_prompt": "接続確認として確認05だけを返してください。",
+        "second_stream": true
+      },
+      "scoring": {
+        "first": {
+          "method": "SSE_reassemble_content_exact_text_and_valid_terminal",
+          "expected": "一行目\n二行目",
+          "utf8_complete": true,
+          "terminal_required": true
+        },
+        "second": {
+          "method": "exact_text_after_outer_whitespace_strip",
+          "expected": "確認05",
+          "extra_text_allowed": false
+        }
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "ef7f03bebf8d492696a33689f5115b877e068a63fc71ea04a40717884e054db7"
+    },
+    {
+      "id": "CA01",
+      "group": "cancel",
+      "max_posts": 2,
+      "max_tokens_per_post": 128,
+      "body": {
+        "first_prompt": "整数1から300を省略せず順に出力してください。途中で要約や終了の挨拶をしないでください。",
+        "first_stream": true,
+        "second_prompt": "回復01だけを返してください。"
+      },
+      "scoring": {
+        "first": {
+          "method": "intentional_cancel_recovery_contract",
+          "trigger": {
+            "observable": "nonempty_content_SSE_event",
+            "event_count": 1
+          },
+          "native_accepted_midstream": null,
+          "preclose_owner_verified": true,
+          "preclose_busy_required": true,
+          "finish_or_DONE_before_cut_allowed": false,
+          "posthoc_normal_finish_or_ambiguous_is_success": false,
+          "reader_exit_required": true,
+          "same_owner_cohort_required": true,
+          "idle_queued_zero_deadline_seconds": 30,
+          "native_output_count": "Record only if available from posthoc engine/timings; never infer from event count"
+        },
+        "second": {
+          "method": "exact_text_after_outer_whitespace_strip",
+          "expected": "回復01",
+          "extra_text_allowed": false
+        }
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "lifecycle": "Same one start: only intended cancel with proven transport/reader/owner/idle recovery may continue to scheduled second POST. Unexpected failure stops new POSTs and uses LCR pending/lock retention.",
+      "case_spec_sha256": "a9dbf35bf6f5dc078621df92eae7cc9e051b459016283dcfec8db19d9fe93b19"
+    },
+    {
+      "id": "CA02",
+      "group": "cancel",
+      "max_posts": 2,
+      "max_tokens_per_post": 128,
+      "body": {
+        "first_prompt": "ひらがなを繰り返す300行を省略せず順に出力してください。途中で要約や終了の挨拶をしないでください。",
+        "first_stream": true,
+        "second_prompt": "回復02だけを返してください。"
+      },
+      "scoring": {
+        "first": {
+          "method": "intentional_cancel_recovery_contract",
+          "trigger": {
+            "observable": "nonempty_content_SSE_event",
+            "event_count": 1
+          },
+          "native_accepted_midstream": null,
+          "preclose_owner_verified": true,
+          "preclose_busy_required": true,
+          "finish_or_DONE_before_cut_allowed": false,
+          "posthoc_normal_finish_or_ambiguous_is_success": false,
+          "reader_exit_required": true,
+          "same_owner_cohort_required": true,
+          "idle_queued_zero_deadline_seconds": 30,
+          "native_output_count": "Record only if available from posthoc engine/timings; never infer from event count"
+        },
+        "second": {
+          "method": "exact_text_after_outer_whitespace_strip",
+          "expected": "回復02",
+          "extra_text_allowed": false
+        }
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "lifecycle": "Same one start: only intended cancel with proven transport/reader/owner/idle recovery may continue to scheduled second POST. Unexpected failure stops new POSTs and uses LCR pending/lock retention.",
+      "case_spec_sha256": "841bec827e1e041a7004812dd80c3f86b7652c9c197e881acf49bad79e8e4030"
+    },
+    {
+      "id": "CA03",
+      "group": "cancel",
+      "max_posts": 2,
+      "max_tokens_per_post": 128,
+      "body": {
+        "first_prompt": "赤青緑を繰り返す300行を省略せず順に出力してください。途中で要約や終了の挨拶をしないでください。",
+        "first_stream": true,
+        "second_prompt": "回復03だけを返してください。"
+      },
+      "scoring": {
+        "first": {
+          "method": "intentional_cancel_recovery_contract",
+          "trigger": {
+            "observable": "nonempty_content_SSE_event",
+            "event_count": 1
+          },
+          "native_accepted_midstream": null,
+          "preclose_owner_verified": true,
+          "preclose_busy_required": true,
+          "finish_or_DONE_before_cut_allowed": false,
+          "posthoc_normal_finish_or_ambiguous_is_success": false,
+          "reader_exit_required": true,
+          "same_owner_cohort_required": true,
+          "idle_queued_zero_deadline_seconds": 30,
+          "native_output_count": "Record only if available from posthoc engine/timings; never infer from event count"
+        },
+        "second": {
+          "method": "exact_text_after_outer_whitespace_strip",
+          "expected": "回復03",
+          "extra_text_allowed": false
+        }
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "lifecycle": "Same one start: only intended cancel with proven transport/reader/owner/idle recovery may continue to scheduled second POST. Unexpected failure stops new POSTs and uses LCR pending/lock retention.",
+      "case_spec_sha256": "9ae78cddfd2069f7a1bc870a9f8f8ad84877597f0b2cc6e3ba60457da1f29bfa"
+    },
+    {
+      "id": "CA04",
+      "group": "cancel",
+      "max_posts": 2,
+      "max_tokens_per_post": 128,
+      "body": {
+        "first_prompt": "アルファベットを繰り返す300行を省略せず順に出力してください。途中で要約や終了の挨拶をしないでください。",
+        "first_stream": true,
+        "second_prompt": "回復04だけを返してください。"
+      },
+      "scoring": {
+        "first": {
+          "method": "intentional_cancel_recovery_contract",
+          "trigger": {
+            "observable": "nonempty_content_SSE_event",
+            "event_count": 1
+          },
+          "native_accepted_midstream": null,
+          "preclose_owner_verified": true,
+          "preclose_busy_required": true,
+          "finish_or_DONE_before_cut_allowed": false,
+          "posthoc_normal_finish_or_ambiguous_is_success": false,
+          "reader_exit_required": true,
+          "same_owner_cohort_required": true,
+          "idle_queued_zero_deadline_seconds": 30,
+          "native_output_count": "Record only if available from posthoc engine/timings; never infer from event count"
+        },
+        "second": {
+          "method": "exact_text_after_outer_whitespace_strip",
+          "expected": "回復04",
+          "extra_text_allowed": false
+        }
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "lifecycle": "Same one start: only intended cancel with proven transport/reader/owner/idle recovery may continue to scheduled second POST. Unexpected failure stops new POSTs and uses LCR pending/lock retention.",
+      "case_spec_sha256": "e74951248157d57184bef408544c4b563b2e8a9a3946ad501639d6affefb4137"
+    },
+    {
+      "id": "CA05",
+      "group": "cancel",
+      "max_posts": 2,
+      "max_tokens_per_post": 128,
+      "body": {
+        "first_prompt": "番号付きの短文300行を省略せず順に出力してください。途中で要約や終了の挨拶をしないでください。",
+        "first_stream": true,
+        "second_prompt": "回復05だけを返してください。"
+      },
+      "scoring": {
+        "first": {
+          "method": "intentional_cancel_recovery_contract",
+          "trigger": {
+            "observable": "nonempty_content_SSE_event",
+            "event_count": 1
+          },
+          "native_accepted_midstream": null,
+          "preclose_owner_verified": true,
+          "preclose_busy_required": true,
+          "finish_or_DONE_before_cut_allowed": false,
+          "posthoc_normal_finish_or_ambiguous_is_success": false,
+          "reader_exit_required": true,
+          "same_owner_cohort_required": true,
+          "idle_queued_zero_deadline_seconds": 30,
+          "native_output_count": "Record only if available from posthoc engine/timings; never infer from event count"
+        },
+        "second": {
+          "method": "exact_text_after_outer_whitespace_strip",
+          "expected": "回復05",
+          "extra_text_allowed": false
+        }
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "lifecycle": "Same one start: only intended cancel with proven transport/reader/owner/idle recovery may continue to scheduled second POST. Unexpected failure stops new POSTs and uses LCR pending/lock retention.",
+      "case_spec_sha256": "c4267dc7ced281ef91cf3fa0b43973f34f136dc320b356021ec72652b3d7733a"
+    },
+    {
+      "id": "CD01",
+      "group": "code",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "整数a,b（0以上）の最大公約数を返すsolve(a,b)。両方0なら0。 Pythonの関数solveだけを書いてください。説明、コードフェンス、print、import、ファイルやネットワーク操作は禁止です。"
+      },
+      "scoring": {
+        "method": "parse_python_function_then_run_fixed_CPU_vectors_in_bounded_newroot_subprocess",
+        "function": "solve",
+        "vectors": [
+          {
+            "args": [
+              54,
+              24
+            ],
+            "expected": 6
+          },
+          {
+            "args": [
+              0,
+              5
+            ],
+            "expected": 5
+          },
+          {
+            "args": [
+              0,
+              0
+            ],
+            "expected": 0
+          },
+          {
+            "args": [
+              17,
+              13
+            ],
+            "expected": 1
+          }
+        ],
+        "timeout_seconds_per_case": 2,
+        "execution_status": "not_run"
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "execution_workdir": "StrataMod private temporary directory only; binding pending",
+      "case_spec_sha256": "b2690639c2fa49632f6660ac3b04c29b9038b165b0ca373007cdf6b14d041b04"
+    },
+    {
+      "id": "CD02",
+      "group": "code",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "括弧文字列sの()[]{}が正しく対応し入れ子も正しいならTrue、そうでなければFalseを返すsolve(s)。空文字列はTrue。 Pythonの関数solveだけを書いてください。説明、コードフェンス、print、import、ファイルやネットワーク操作は禁止です。"
+      },
+      "scoring": {
+        "method": "parse_python_function_then_run_fixed_CPU_vectors_in_bounded_newroot_subprocess",
+        "function": "solve",
+        "vectors": [
+          {
+            "args": [
+              "([]{})"
+            ],
+            "expected": true
+          },
+          {
+            "args": [
+              "([)]"
+            ],
+            "expected": false
+          },
+          {
+            "args": [
+              ""
+            ],
+            "expected": true
+          },
+          {
+            "args": [
+              "(()"
+            ],
+            "expected": false
+          }
+        ],
+        "timeout_seconds_per_case": 2,
+        "execution_status": "not_run"
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "execution_workdir": "StrataMod private temporary directory only; binding pending",
+      "case_spec_sha256": "7aa338047bb7b34f8af969c2b1da74e938f06f38c3dd3ecf5b5cf20da8f3281d"
+    },
+    {
+      "id": "CD03",
+      "group": "code",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "文字列sを連続同字ごとの[文字,個数]の配列へ圧縮して返すsolve(s)。 Pythonの関数solveだけを書いてください。説明、コードフェンス、print、import、ファイルやネットワーク操作は禁止です。"
+      },
+      "scoring": {
+        "method": "parse_python_function_then_run_fixed_CPU_vectors_in_bounded_newroot_subprocess",
+        "function": "solve",
+        "vectors": [
+          {
+            "args": [
+              "aaabbc"
+            ],
+            "expected": [
+              [
+                "a",
+                3
+              ],
+              [
+                "b",
+                2
+              ],
+              [
+                "c",
+                1
+              ]
+            ]
+          },
+          {
+            "args": [
+              ""
+            ],
+            "expected": []
+          },
+          {
+            "args": [
+              "a"
+            ],
+            "expected": [
+              [
+                "a",
+                1
+              ]
+            ]
+          },
+          {
+            "args": [
+              "abbaa"
+            ],
+            "expected": [
+              [
+                "a",
+                1
+              ],
+              [
+                "b",
+                2
+              ],
+              [
+                "a",
+                2
+              ]
+            ]
+          }
+        ],
+        "timeout_seconds_per_case": 2,
+        "execution_status": "not_run"
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "execution_workdir": "StrataMod private temporary directory only; binding pending",
+      "case_spec_sha256": "94ad04d1ed5327dff3030065e246304c569500c59f867054e8387e9d355cd351"
+    },
+    {
+      "id": "CD04",
+      "group": "code",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "配列xsを右にk個循環移動した新配列を返すsolve(xs,k)。kは0以上、空配列は空配列。 Pythonの関数solveだけを書いてください。説明、コードフェンス、print、import、ファイルやネットワーク操作は禁止です。"
+      },
+      "scoring": {
+        "method": "parse_python_function_then_run_fixed_CPU_vectors_in_bounded_newroot_subprocess",
+        "function": "solve",
+        "vectors": [
+          {
+            "args": [
+              [
+                1,
+                2,
+                3,
+                4
+              ],
+              1
+            ],
+            "expected": [
+              4,
+              1,
+              2,
+              3
+            ]
+          },
+          {
+            "args": [
+              [
+                1,
+                2,
+                3
+              ],
+              4
+            ],
+            "expected": [
+              3,
+              1,
+              2
+            ]
+          },
+          {
+            "args": [
+              [],
+              5
+            ],
+            "expected": []
+          },
+          {
+            "args": [
+              [
+                7
+              ],
+              0
+            ],
+            "expected": [
+              7
+            ]
+          }
+        ],
+        "timeout_seconds_per_case": 2,
+        "execution_status": "not_run"
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "execution_workdir": "StrataMod private temporary directory only; binding pending",
+      "case_spec_sha256": "18c4864ad02a7a3e2e6e50f41a4cad7988ae0eb7ee2f55a5386c89374100ab6b"
+    },
+    {
+      "id": "CD05",
+      "group": "code",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "整数配列xsで和がtargetの異なる2要素の添字[i,j]（i<j）を返すsolve(xs,target)。候補が複数ならiが最小、次にjが最小。なければ[]。 Pythonの関数solveだけを書いてください。説明、コードフェンス、print、import、ファイルやネットワーク操作は禁止です。"
+      },
+      "scoring": {
+        "method": "parse_python_function_then_run_fixed_CPU_vectors_in_bounded_newroot_subprocess",
+        "function": "solve",
+        "vectors": [
+          {
+            "args": [
+              [
+                2,
+                7,
+                11,
+                15
+              ],
+              9
+            ],
+            "expected": [
+              0,
+              1
+            ]
+          },
+          {
+            "args": [
+              [
+                3,
+                3
+              ],
+              6
+            ],
+            "expected": [
+              0,
+              1
+            ]
+          },
+          {
+            "args": [
+              [
+                1,
+                2,
+                3,
+                4
+              ],
+              5
+            ],
+            "expected": [
+              0,
+              3
+            ]
+          },
+          {
+            "args": [
+              [
+                1
+              ],
+              2
+            ],
+            "expected": []
+          }
+        ],
+        "timeout_seconds_per_case": 2,
+        "execution_status": "not_run"
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "execution_workdir": "StrataMod private temporary directory only; binding pending",
+      "case_spec_sha256": "05fc5574f46601715207c10464e12ad21c01853e27db3296d40e0ed00f862444"
+    },
+    {
+      "id": "CD06",
+      "group": "code",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "閉区間の配列intervalsを始点順にし、重なるか端点が接する区間を併合した配列を返すsolve(intervals)。 Pythonの関数solveだけを書いてください。説明、コードフェンス、print、import、ファイルやネットワーク操作は禁止です。"
+      },
+      "scoring": {
+        "method": "parse_python_function_then_run_fixed_CPU_vectors_in_bounded_newroot_subprocess",
+        "function": "solve",
+        "vectors": [
+          {
+            "args": [
+              [
+                [
+                  1,
+                  3
+                ],
+                [
+                  2,
+                  6
+                ],
+                [
+                  8,
+                  10
+                ]
+              ]
+            ],
+            "expected": [
+              [
+                1,
+                6
+              ],
+              [
+                8,
+                10
+              ]
+            ]
+          },
+          {
+            "args": [
+              [
+                [
+                  4,
+                  5
+                ],
+                [
+                  1,
+                  4
+                ]
+              ]
+            ],
+            "expected": [
+              [
+                1,
+                5
+              ]
+            ]
+          },
+          {
+            "args": [
+              []
+            ],
+            "expected": []
+          },
+          {
+            "args": [
+              [
+                [
+                  2,
+                  2
+                ]
+              ]
+            ],
+            "expected": [
+              [
+                2,
+                2
+              ]
+            ]
+          }
+        ],
+        "timeout_seconds_per_case": 2,
+        "execution_status": "not_run"
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "execution_workdir": "StrataMod private temporary directory only; binding pending",
+      "case_spec_sha256": "fd75d9252c9f0c9db688a1880db538cf3be29865eee984237d4d7945d8fc2160"
+    },
+    {
+      "id": "CD07",
+      "group": "code",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "昇順整数配列xsでtargetが最初に現れる添字を返し、なければ-1とするsolve(xs,target)。 Pythonの関数solveだけを書いてください。説明、コードフェンス、print、import、ファイルやネットワーク操作は禁止です。"
+      },
+      "scoring": {
+        "method": "parse_python_function_then_run_fixed_CPU_vectors_in_bounded_newroot_subprocess",
+        "function": "solve",
+        "vectors": [
+          {
+            "args": [
+              [
+                1,
+                2,
+                2,
+                3
+              ],
+              2
+            ],
+            "expected": 1
+          },
+          {
+            "args": [
+              [
+                1,
+                3,
+                5
+              ],
+              4
+            ],
+            "expected": -1
+          },
+          {
+            "args": [
+              [],
+              1
+            ],
+            "expected": -1
+          },
+          {
+            "args": [
+              [
+                7
+              ],
+              7
+            ],
+            "expected": 0
+          }
+        ],
+        "timeout_seconds_per_case": 2,
+        "execution_status": "not_run"
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "execution_workdir": "StrataMod private temporary directory only; binding pending",
+      "case_spec_sha256": "724a5b4e454522ab89c2f54f1d7a6daaef6e17ff507a98d42605f5721608024f"
+    },
+    {
+      "id": "CD08",
+      "group": "code",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "文字列sに含まれる英字母音aeiouの個数を大小文字を区別せず返すsolve(s)。他の文字は数えない。 Pythonの関数solveだけを書いてください。説明、コードフェンス、print、import、ファイルやネットワーク操作は禁止です。"
+      },
+      "scoring": {
+        "method": "parse_python_function_then_run_fixed_CPU_vectors_in_bounded_newroot_subprocess",
+        "function": "solve",
+        "vectors": [
+          {
+            "args": [
+              "AEiou xyz"
+            ],
+            "expected": 5
+          },
+          {
+            "args": [
+              "Python"
+            ],
+            "expected": 1
+          },
+          {
+            "args": [
+              ""
+            ],
+            "expected": 0
+          },
+          {
+            "args": [
+              "あいうえお"
+            ],
+            "expected": 0
+          }
+        ],
+        "timeout_seconds_per_case": 2,
+        "execution_status": "not_run"
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "execution_workdir": "StrataMod private temporary directory only; binding pending",
+      "case_spec_sha256": "0eb5a987e8c0d8f6c0db636733fb9cace7f4c6a8d51fe3392313e217d6ab217e"
+    },
+    {
+      "id": "CD09",
+      "group": "code",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "整数nが素数ならTrue、それ以外ならFalseを返すsolve(n)。 Pythonの関数solveだけを書いてください。説明、コードフェンス、print、import、ファイルやネットワーク操作は禁止です。"
+      },
+      "scoring": {
+        "method": "parse_python_function_then_run_fixed_CPU_vectors_in_bounded_newroot_subprocess",
+        "function": "solve",
+        "vectors": [
+          {
+            "args": [
+              2
+            ],
+            "expected": true
+          },
+          {
+            "args": [
+              1
+            ],
+            "expected": false
+          },
+          {
+            "args": [
+              49
+            ],
+            "expected": false
+          },
+          {
+            "args": [
+              97
+            ],
+            "expected": true
+          }
+        ],
+        "timeout_seconds_per_case": 2,
+        "execution_status": "not_run"
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "execution_workdir": "StrataMod private temporary directory only; binding pending",
+      "case_spec_sha256": "113f180469bdbfff9a9bf012e306e8c76e26cce2e96c7e6c547f887001ef9359"
+    },
+    {
+      "id": "CD10",
+      "group": "code",
+      "max_posts": 1,
+      "max_tokens_per_post": 256,
+      "body": {
+        "prompt": "文字列sで1回だけ現れる最初の文字を返すsolve(s)。なければ空文字列。 Pythonの関数solveだけを書いてください。説明、コードフェンス、print、import、ファイルやネットワーク操作は禁止です。"
+      },
+      "scoring": {
+        "method": "parse_python_function_then_run_fixed_CPU_vectors_in_bounded_newroot_subprocess",
+        "function": "solve",
+        "vectors": [
+          {
+            "args": [
+              "swiss"
+            ],
+            "expected": "w"
+          },
+          {
+            "args": [
+              "aabb"
+            ],
+            "expected": ""
+          },
+          {
+            "args": [
+              ""
+            ],
+            "expected": ""
+          },
+          {
+            "args": [
+              "abac"
+            ],
+            "expected": "b"
+          }
+        ],
+        "timeout_seconds_per_case": 2,
+        "execution_status": "not_run"
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "execution_workdir": "StrataMod private temporary directory only; binding pending",
+      "case_spec_sha256": "792b78029459607d4197a31ae780df201751896bc1e8e65cb5a8b4e9734482c7"
+    },
+    {
+      "id": "LR4K-18",
+      "group": "long_recall",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "template": "資料を読み、最後の質問に指定形式で答えてください。\n{filler_before}\n{fact}\n{filler_after}\n質問: 保管庫4K-18の合言葉だけを答えてください。",
+        "filler_unit": "この段落は一般の作業記録です。記録の順序は一定で、ここには合言葉の指定はありません。\n",
+        "fact": "保管庫4K-18に記された合言葉は「青葉409618」です。",
+        "target_rendered_input_tokens": 4096,
+        "fact_token_position_target": {
+          "numerator": 18,
+          "denominator": 100,
+          "rounding": "floor",
+          "index_from": 0
+        },
+        "placement_scope": "Rendered input after role/template expansion; exact insertion boundary and filler split pending real tokenizer",
+        "tokenization_status": "template_only_no_long_payload_materialized"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "青葉409618",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "96e9648343f4e3709bd111ae16a7fff30f37a3f1c58879085eea973f7a7b6c2b"
+    },
+    {
+      "id": "LR4K-72",
+      "group": "long_recall",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "template": "資料を読み、最後の質問に指定形式で答えてください。\n{filler_before}\n{fact}\n{filler_after}\n質問: 保管庫4K-72の合言葉だけを答えてください。",
+        "filler_unit": "この段落は一般の作業記録です。記録の順序は一定で、ここには合言葉の指定はありません。\n",
+        "fact": "保管庫4K-72に記された合言葉は「青葉409672」です。",
+        "target_rendered_input_tokens": 4096,
+        "fact_token_position_target": {
+          "numerator": 72,
+          "denominator": 100,
+          "rounding": "floor",
+          "index_from": 0
+        },
+        "placement_scope": "Rendered input after role/template expansion; exact insertion boundary and filler split pending real tokenizer",
+        "tokenization_status": "template_only_no_long_payload_materialized"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "青葉409672",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "9530ceb3d17248dcb11743f812e831a635f4e3eaca2b425098663afb57c94cfa"
+    },
+    {
+      "id": "LR16K-18",
+      "group": "long_recall",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "template": "資料を読み、最後の質問に指定形式で答えてください。\n{filler_before}\n{fact}\n{filler_after}\n質問: 保管庫16K-18の合言葉だけを答えてください。",
+        "filler_unit": "この段落は一般の作業記録です。記録の順序は一定で、ここには合言葉の指定はありません。\n",
+        "fact": "保管庫16K-18に記された合言葉は「青葉1638418」です。",
+        "target_rendered_input_tokens": 16384,
+        "fact_token_position_target": {
+          "numerator": 18,
+          "denominator": 100,
+          "rounding": "floor",
+          "index_from": 0
+        },
+        "placement_scope": "Rendered input after role/template expansion; exact insertion boundary and filler split pending real tokenizer",
+        "tokenization_status": "template_only_no_long_payload_materialized"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "青葉1638418",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "615bccbd85db0ad80b56426fd70bb72578b18d756cd86bf074260346f81ffb7d"
+    },
+    {
+      "id": "LR16K-72",
+      "group": "long_recall",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "template": "資料を読み、最後の質問に指定形式で答えてください。\n{filler_before}\n{fact}\n{filler_after}\n質問: 保管庫16K-72の合言葉だけを答えてください。",
+        "filler_unit": "この段落は一般の作業記録です。記録の順序は一定で、ここには合言葉の指定はありません。\n",
+        "fact": "保管庫16K-72に記された合言葉は「青葉1638472」です。",
+        "target_rendered_input_tokens": 16384,
+        "fact_token_position_target": {
+          "numerator": 72,
+          "denominator": 100,
+          "rounding": "floor",
+          "index_from": 0
+        },
+        "placement_scope": "Rendered input after role/template expansion; exact insertion boundary and filler split pending real tokenizer",
+        "tokenization_status": "template_only_no_long_payload_materialized"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "青葉1638472",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "53bd2e4cc5a886d54729a1443b9d2fa7fcd00743280058c22aa7cfc2545f02e3"
+    },
+    {
+      "id": "LR32K-18",
+      "group": "long_recall",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "template": "資料を読み、最後の質問に指定形式で答えてください。\n{filler_before}\n{fact}\n{filler_after}\n質問: 保管庫32K-18の合言葉だけを答えてください。",
+        "filler_unit": "この段落は一般の作業記録です。記録の順序は一定で、ここには合言葉の指定はありません。\n",
+        "fact": "保管庫32K-18に記された合言葉は「青葉3276818」です。",
+        "target_rendered_input_tokens": 32768,
+        "fact_token_position_target": {
+          "numerator": 18,
+          "denominator": 100,
+          "rounding": "floor",
+          "index_from": 0
+        },
+        "placement_scope": "Rendered input after role/template expansion; exact insertion boundary and filler split pending real tokenizer",
+        "tokenization_status": "template_only_no_long_payload_materialized"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "青葉3276818",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "f3b8f276b8877c530eac09e31074446556bcd2d630c0165bcb9728df4f875873"
+    },
+    {
+      "id": "LR32K-72",
+      "group": "long_recall",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "template": "資料を読み、最後の質問に指定形式で答えてください。\n{filler_before}\n{fact}\n{filler_after}\n質問: 保管庫32K-72の合言葉だけを答えてください。",
+        "filler_unit": "この段落は一般の作業記録です。記録の順序は一定で、ここには合言葉の指定はありません。\n",
+        "fact": "保管庫32K-72に記された合言葉は「青葉3276872」です。",
+        "target_rendered_input_tokens": 32768,
+        "fact_token_position_target": {
+          "numerator": 72,
+          "denominator": 100,
+          "rounding": "floor",
+          "index_from": 0
+        },
+        "placement_scope": "Rendered input after role/template expansion; exact insertion boundary and filler split pending real tokenizer",
+        "tokenization_status": "template_only_no_long_payload_materialized"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "青葉3276872",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "5c8c9ed727868286b5328863e1c38632f7a64250bb2996fe86e51d6902398354"
+    },
+    {
+      "id": "LR64K-18",
+      "group": "long_recall",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "template": "資料を読み、最後の質問に指定形式で答えてください。\n{filler_before}\n{fact}\n{filler_after}\n質問: 保管庫64K-18の合言葉だけを答えてください。",
+        "filler_unit": "この段落は一般の作業記録です。記録の順序は一定で、ここには合言葉の指定はありません。\n",
+        "fact": "保管庫64K-18に記された合言葉は「青葉6553618」です。",
+        "target_rendered_input_tokens": 65536,
+        "fact_token_position_target": {
+          "numerator": 18,
+          "denominator": 100,
+          "rounding": "floor",
+          "index_from": 0
+        },
+        "placement_scope": "Rendered input after role/template expansion; exact insertion boundary and filler split pending real tokenizer",
+        "tokenization_status": "template_only_no_long_payload_materialized"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "青葉6553618",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "fbb6b418c41ba80d52e9933125d03b3b130bc8ff166ca7564af20228d5dd5b2c"
+    },
+    {
+      "id": "LR64K-72",
+      "group": "long_recall",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "template": "資料を読み、最後の質問に指定形式で答えてください。\n{filler_before}\n{fact}\n{filler_after}\n質問: 保管庫64K-72の合言葉だけを答えてください。",
+        "filler_unit": "この段落は一般の作業記録です。記録の順序は一定で、ここには合言葉の指定はありません。\n",
+        "fact": "保管庫64K-72に記された合言葉は「青葉6553672」です。",
+        "target_rendered_input_tokens": 65536,
+        "fact_token_position_target": {
+          "numerator": 72,
+          "denominator": 100,
+          "rounding": "floor",
+          "index_from": 0
+        },
+        "placement_scope": "Rendered input after role/template expansion; exact insertion boundary and filler split pending real tokenizer",
+        "tokenization_status": "template_only_no_long_payload_materialized"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "青葉6553672",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "0c6287531c40e6868229650493d177ac237c158267854184dcb7bbf03eb9e099"
+    },
+    {
+      "id": "LR100K-18",
+      "group": "long_recall",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "template": "資料を読み、最後の質問に指定形式で答えてください。\n{filler_before}\n{fact}\n{filler_after}\n質問: 保管庫100K-18の合言葉だけを答えてください。",
+        "filler_unit": "この段落は一般の作業記録です。記録の順序は一定で、ここには合言葉の指定はありません。\n",
+        "fact": "保管庫100K-18に記された合言葉は「青葉10240018」です。",
+        "target_rendered_input_tokens": 102400,
+        "fact_token_position_target": {
+          "numerator": 18,
+          "denominator": 100,
+          "rounding": "floor",
+          "index_from": 0
+        },
+        "placement_scope": "Rendered input after role/template expansion; exact insertion boundary and filler split pending real tokenizer",
+        "tokenization_status": "template_only_no_long_payload_materialized"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "青葉10240018",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "e49ec31fbbd1dfdd7b457091782f62c1e6bf30aa3398ea5c885dcacd6a831dab"
+    },
+    {
+      "id": "LR100K-72",
+      "group": "long_recall",
+      "max_posts": 1,
+      "max_tokens_per_post": 128,
+      "body": {
+        "template": "資料を読み、最後の質問に指定形式で答えてください。\n{filler_before}\n{fact}\n{filler_after}\n質問: 保管庫100K-72の合言葉だけを答えてください。",
+        "filler_unit": "この段落は一般の作業記録です。記録の順序は一定で、ここには合言葉の指定はありません。\n",
+        "fact": "保管庫100K-72に記された合言葉は「青葉10240072」です。",
+        "target_rendered_input_tokens": 102400,
+        "fact_token_position_target": {
+          "numerator": 72,
+          "denominator": 100,
+          "rounding": "floor",
+          "index_from": 0
+        },
+        "placement_scope": "Rendered input after role/template expansion; exact insertion boundary and filler split pending real tokenizer",
+        "tokenization_status": "template_only_no_long_payload_materialized"
+      },
+      "scoring": {
+        "method": "exact_text_after_outer_whitespace_strip",
+        "expected": "青葉10240072",
+        "extra_text_allowed": false
+      },
+      "rendered_input_tokens": null,
+      "input_token_sha256": null,
+      "api_payload_sha256": null,
+      "readiness": "draft_spec_only_requires_tokenization_payload_binding_independent_review",
+      "case_spec_sha256": "1500dacdd96cc044c5ea4eba90b24044d591a14887979c1846e8dfade435979f"
+    }
+  ],
+  "json_schema_dialect": "https://json-schema.org/draft/2020-12/schema"
+}

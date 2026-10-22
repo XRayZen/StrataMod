@@ -5870,7 +5870,8 @@ class UntimedReads(unittest.TestCase):
         v = server.Vision.__new__(server.Vision)
         v.dir, v.lock, v.cache = Path(tempfile.mkdtemp(prefix="strata-vision-test-")), threading.Lock(), {}
         v.stopped = False
-        v.proc = SimpleNamespace(stdin=io.StringIO(), stdout=silent, kill=silent.kill, poll=lambda: 1 if silent.killed else None)
+        v.proc = SimpleNamespace(stdin=io.StringIO(), stdout=silent, kill=silent.kill,
+                                 wait=lambda timeout=None: 0, poll=lambda: 1 if silent.killed else None)
         try:
             with mock.patch.object(server, "VISION_ENCODE_S", 0.3), \
                     mock.patch.object(server.Vision, "load", return_value=b""),                     mock.patch.object(server.Vision, "normalize", return_value=b"png"):
@@ -5886,7 +5887,8 @@ class UntimedReads(unittest.TestCase):
     def test_vision_ready_read_times_out(self):
         import serve.server as server
         silent = self.Silent()
-        proc = SimpleNamespace(stdin=io.StringIO(), stdout=silent, kill=silent.kill, poll=lambda: None)
+        proc = SimpleNamespace(stdin=io.StringIO(), stdout=silent, kill=silent.kill,
+                               wait=lambda timeout=None: 0, poll=lambda: None)
         v = server.Vision.__new__(server.Vision)
         v.spawn = (["strata-vision"], None, None)
         v.dir = Path(tempfile.mkdtemp(prefix="strata-vision-test-"))
