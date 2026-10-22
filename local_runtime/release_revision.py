@@ -155,8 +155,9 @@ def prepare(n):
         return dict(receipt=str(receipt),sha256=m.digest(receipt),activated=False,full_hashed=len(proof['full_hashed']),inherited=len(proof['inherited']))
 
 
-def ready(n,state,cfg,value,monitor,observation):
+def ready(n,state,cfg,value,monitor,observation,*,runtime_root=None):
     """Observe the actual official GPU/CPU reader, without inventing private traces."""
+    runtime_root=RUNTIME if runtime_root is None else Path(runtime_root)
     status=n.safety.get_json('/v1/status');cap=status.get('vision',{})
     backend=cap.get('backend')
     if cap.get('available') is not True or backend not in ('hip','cpu') or cap.get('cleanup_pending') is not False or cap.get('error') is not None:
@@ -173,7 +174,7 @@ def ready(n,state,cfg,value,monitor,observation):
         for name in names:
             found=[r for r in rows if Path(r['path']).name.lower()==name]
             if len(found)!=1 or found[0].get('sha256')!=deps.get(found[0]['path']):raise RuntimeError('Release loaded DLL identity unknown: '+name)
-            if not Path(found[0]['path']).is_relative_to(RUNTIME):raise RuntimeError('Release DLL loaded outside sidecar')
+            if not Path(found[0]['path']).is_relative_to(runtime_root):raise RuntimeError('Release DLL loaded outside sidecar')
     raw=Path(cfg['log']).read_text(encoding='utf-8',errors='replace')
     if 'GPU 0: AMD Radeon AI PRO R9700 (gfx1201)' not in raw:raise RuntimeError('Release text R9700/gfx1201 not confirmed')
     # The signed reader's quiet_log consumes INFO Device lines for its own
@@ -191,7 +192,7 @@ def ready(n,state,cfg,value,monitor,observation):
     devices=[line for line in raw.splitlines() if re.search(r'Device 0: .*R9700, gfx1201\b',line)]
     windows=n.gpu_observation.windows_displays();adapter=n.gpu_observation.select_adapter(windows,n.gpu_observation.dxgi_adapters())
     state.update(phase='ready',loader=dict(text=text,image=modules,reader_backend=backend,windows=windows,adapter=adapter,
-                 build=m.read_json(RUNTIME/'BUILD.json'),reader_device_lines=devices,
+                 build=m.read_json(runtime_root/'BUILD.json'),reader_device_lines=devices,
                  reader_binding=dict(kind='signed-official-reader-mask-binding',physical_hip_ordinal=1,
                      logical_ordinal=0 if backend=='hip' else None,selected_alive_backend=backend,
                      device_stdout='supplementary lines present' if devices else 'INFO Device lines suppressed by official quiet_log',

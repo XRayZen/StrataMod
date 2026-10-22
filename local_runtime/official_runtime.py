@@ -31,8 +31,8 @@ def management(value):
     return strata,native().Tools(strata)
 
 
-def clean_environment(config,inherited,expected):
-    env = manifest.normalized_environment(config,inherited)
+def clean_environment(config,inherited,expected,*,environment_factory=None):
+    env = (manifest.normalized_environment if environment_factory is None else environment_factory)(config,inherited)
     if env != expected:
         raise RuntimeError('Prepared candidate child environment changed; no spawn')
     temporary = Path(config['log']).parent/'tmp'
@@ -73,10 +73,16 @@ class SpawnObserver:
     @classmethod
     def normal_launch(cls,state):
         from . import normal_runtime,runtime_safety as safety
+        return cls.authorized_launch(state,normal_runtime)
+
+    @classmethod
+    def authorized_launch(cls,state,authority):
+        """Explicit private facade, without changing normal module globals."""
+        from . import runtime_safety as safety
         import copy
-        fixed=normal_runtime.authority(state)
+        fixed=authority.authority(state)
         cfg=copy.deepcopy(fixed['snapshot_config']);command=tuple(fixed['command']);config=str(state['config'])
-        expected=copy.deepcopy(normal_runtime.expected_child_commands(cfg))
+        expected=copy.deepcopy(authority.expected_child_commands(cfg))
         def classify(executable,actual):
             if not safety._allowed_child_config(executable,actual,config,cfg):return False
             required=expected.get(str(Path(executable).resolve()))
@@ -356,6 +362,9 @@ def start_candidate(path,approved_sha256,*,retained=None,_image=False,before_spa
 
 
 def require_tracking(state):
+    if state.get('kind')=='stratamod-prefill-timing-pilot-v1':
+        from .prefill_timing_pilot import PilotRuntime
+        return PilotRuntime.attach(state).require_tracking(state)
     if state.get('kind')=='stratamod-normal-v1':
         from . import normal_runtime
         return normal_runtime.require_tracking(state)

@@ -73,8 +73,10 @@ def digest(path):
     return result.hexdigest()
 
 
-def normalized_environment(config,inherited):
+def normalized_environment(config,inherited,*,python_path=None,venv_python=None):
     """Only Windows/user essentials survive; SDK/Python injection is removed."""
+    python_path=PYTHON if python_path is None else Path(python_path)
+    venv_python=VENV_PYTHON if venv_python is None else Path(venv_python)
     parent = {key.upper():value for key,value in inherited.items()}
     keep = ('USERPROFILE','APPDATA','LOCALAPPDATA','PROGRAMDATA','COMPUTERNAME','USERNAME','USERDOMAIN',
             'NUMBER_OF_PROCESSORS','PROCESSOR_ARCHITECTURE','SYSTEMDRIVE')
@@ -82,11 +84,11 @@ def normalized_environment(config,inherited):
     windows = Path('C:/Windows')
     env.update(SystemRoot=str(windows),WINDIR=str(windows),COMSPEC=str(windows/'System32/cmd.exe'),
                PATHEXT='.COM;.EXE;.BAT;.CMD',
-               PATH=os.pathsep.join(str(path) for path in (PYTHON.parent,windows/'System32',windows)),
+               PATH=os.pathsep.join(str(path) for path in (python_path.parent,windows/'System32',windows)),
                HIP_PATH=str(Path(config['exe']).parent/'rocm') if config.get('vision',{}).get('reader_mode')=='official-bundle' else str(ORIGINAL/'engine/rocm'),
                ROCM_PATH=str(Path(config['exe']).parent/'rocm') if config.get('vision',{}).get('reader_mode')=='official-bundle' else str(ORIGINAL/'engine/rocm'),
                PYTHONUTF8='1',PYTHONDONTWRITEBYTECODE='1',PYTHONNOUSERSITE='1',PYTHONSAFEPATH='1',
-               PYTHONUNBUFFERED='1',PYTHONIOENCODING='utf-8',__PYVENV_LAUNCHER__=str(VENV_PYTHON))
+               PYTHONUNBUFFERED='1',PYTHONIOENCODING='utf-8',__PYVENV_LAUNCHER__=str(venv_python))
     temporary = str(Path(config['log']).parent/'tmp')
     env.update(TEMP=temporary,TMP=temporary,TMPDIR=temporary)
     env['AMD_COMGR_CACHE_DIR'] = str(Path(temporary)/'comgr')

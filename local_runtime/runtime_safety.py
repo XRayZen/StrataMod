@@ -88,13 +88,22 @@ def require_identity(result):
             ' 元の起動端末と同じ権限で確認してください。管理者で起動した場合は管理者PowerShellで同じ操作を実行してください。')
     return result.process
 
+def state_storage(state):
+    if state.get('kind')=='stratamod-prefill-timing-pilot-v1':
+        from .pilot_authority import context_for_state
+        ctx=context_for_state(state)
+        return ctx.local(ctx.state),ctx.local(ctx.pilot/'records')
+    return STATE,ROOT/'records'
+
+
 def save(state):
-    temp=STATE.with_suffix('.tmp')
+    destination,_=state_storage(state)
+    temp=destination.with_suffix('.tmp')
     temp.write_text(json.dumps(state,indent=2),encoding='utf-8')
     deadline=time.monotonic()+.5
     while True:
         try:
-            temp.replace(STATE)
+            temp.replace(destination)
             return
         except PermissionError as error:
             # A short-lived Windows reader can deny atomic replacement.
@@ -145,6 +154,9 @@ def runtime_active(state):
     return False
 
 def family_config(config):
+    if pathlib.Path(config).name=='strata-PrefillTimingPilot.json':
+        from .prefill_timing_pilot import PilotRuntime
+        return PilotRuntime.fixed_config(config)
     # Only the dedicated normal mutable path selects immutable snapshot authority.
     if pathlib.Path(config).name=='strata-StrataMod.json':
         from . import normal_runtime
@@ -334,7 +346,7 @@ def stop_owned(state,known=(),*,official_first=True,post_unload=False):
         # Collecting a validated subset is not authority to end its root while
         # another saved/unknown child cannot be inspected. Reject before *any*
         # termination; the separate retained-Popen cleanup remains exact-spawn only.
-        receipt=ROOT/'records'/f'runtime-cleanup-{state.get("pid","unknown")}-{time.time_ns()}.json'
+        receipt=state_storage(state)[1]/f'runtime-cleanup-{state.get("pid","unknown")}-{time.time_ns()}.json'
         receipt.write_text(json.dumps(dict(root_pid=state.get('pid'),root_created=state.get('created'),
             phase='preflight_rejected',stopped_pids=[],known_alive=[p.pid for p in victims],
             owned_identities=state.get('owned_identities',[]),independently_exited=list(independently_exited.values()),unrecognized_children=unknown_evidence,errors=errors),indent=2),encoding='utf-8')
@@ -363,7 +375,7 @@ def stop_owned(state,known=(),*,official_first=True,post_unload=False):
             child=psutil.Process(row['pid']);row['alive_after_cleanup']=child.is_running() and (row['created'] is None or abs(child.create_time()-row['created'])<.05)
         except psutil.NoSuchProcess:row['alive_after_cleanup']=False
         except psutil.Error as error:row['alive_after_cleanup']=None;errors.append(dict(pid=row['pid'],action='inspect_unknown_after',error_type=type(error).__name__))
-    receipt=ROOT/'records'/f'runtime-cleanup-{state.get("pid","unknown")}-{time.time_ns()}.json'
+    receipt=state_storage(state)[1]/f'runtime-cleanup-{state.get("pid","unknown")}-{time.time_ns()}.json'
     receipt.write_text(json.dumps(dict(root_pid=state.get('pid'),root_created=state.get('created'),stopped_pids=stopped,known_alive=[p.pid for p in alive],independently_exited=list(independently_exited.values()),unrecognized_children=unknown_evidence,errors=errors),indent=2),encoding='utf-8')
     state['cleanup_receipt']=str(receipt)
     if alive:raise RuntimeError('Task-owned processes have not exited: '+','.join(str(p.pid) for p in alive))
