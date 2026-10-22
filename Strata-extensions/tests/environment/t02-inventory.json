@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "scope": "T02 inventory; not native build, loaded-DLL or GPU qualification",
+  "snapshot_source": "Windows CIM, exact-path executable --version, Test-Path; environment investigator read-only handoff",
+  "fresh": {
+    "timestamp": "2026-10-21T00:38:04.2412988+09:00",
+    "os": "Microsoft Windows 11 Pro",
+    "version": "10.0.26200",
+    "ram_total_bytes": 102897238016,
+    "ram_available_bytes": 39132360704,
+    "committed_bytes": 120613797888,
+    "commit_limit_bytes": 194347909120,
+    "c_size_bytes": 1999373332480,
+    "c_free_bytes": 609457401856
+  },
+  "earlier_read_only_snapshot": {
+    "window_jst": "2026-10-21 00:31-00:38",
+    "c_free_bytes": 609475092480,
+    "ram_available_bytes": 40948436992,
+    "committed_bytes": 119514656768,
+    "commit_limit_bytes": 194347909120,
+    "note": "Different observation time; free memory/disk/commit naturally vary. Not concurrent with the fresh snapshot."
+  },
+  "devices": {
+    "driver_wmi": "32.0.31041.5005",
+    "method": "DXGI enumeration only using existing dxgi_adapters.py read-only prefix; no D3D/HIP context creation",
+    "primary_candidate": {"name": "Radeon AI PRO R9700", "pci_vendor": "1002", "pci_device": "7551", "dedicated_bytes": 34054242304},
+    "secondary_candidate": {"name": "Radeon RX 7900 XTX", "pci_vendor": "1002", "pci_device": "744C", "dedicated_bytes": 25708240896},
+    "wddm_budget": "not-measured",
+    "note": "Dedicated bytes are adapter properties, not current free VRAM, usable HIP allocation or full physical device binding."
+  },
+  "toolchain_candidates": {
+    "vision_rocm": {
+      "root": "C:/Develop/AI/StrataMod/.vision-venv-10.1",
+      "hipcc": "Scripts/hipcc.exe",
+      "hip_version": "7.16.26385-7da43026e4",
+      "clang": "Lib/site-packages/_rocm_sdk_devel/lib/llvm/bin/clang++.exe",
+      "clang_version": "24.0.0git d6f6cb691863e9258034ab48c1dfce21689d5606",
+      "target": "x86_64-pc-windows-msvc",
+      "cmake": "Scripts/cmake.exe",
+      "cmake_version": "4.1.3",
+      "ninja": "Scripts/ninja.exe",
+      "ninja_version": "1.13.0.git.kitware.jobserver-pipe-1",
+      "package_versions": "rocm/core/devel/libraries/device-gfx1201 10.1.0",
+      "gfx1100_package_metadata": "not-found-in-this-venv; capability not tested",
+      "use": "Read-only reference via task-local environment; no activation or shared package changes. Build compatibility untested."
+    },
+    "strata_python_tools": {
+      "root": "C:/Develop/AI/Strata/.venv",
+      "cmake": "Scripts/cmake.exe",
+      "cmake_version": "4.4.3",
+      "ninja": "Scripts/ninja.exe",
+      "ninja_version": "1.13.2.git.kitware.jobserver-pipe-1",
+      "use": "Separate candidate; not the executables measured in vision_rocm."
+    },
+    "msvc": {
+      "root": "C:/Develop/AI/StrataMod/.vision-toolchain/vs",
+      "cl": "VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe",
+      "link": "VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/link.exe",
+      "cl_banner": "19.44.35229",
+      "vcvars": "VC/Auxiliary/Build/vcvars64.bat",
+      "windows_sdk_root": "C:/Develop/AI/StrataMod/.vision-toolchain/winsdk",
+      "windows_header": "microsoft.windows.sdk.cpp/c/Include/10.0.26100.0/um/Windows.h",
+      "kernel32_lib": "microsoft.windows.sdk.cpp.x64/c/um/x64/kernel32.Lib",
+      "ucrt_lib": "microsoft.windows.sdk.cpp.x64/c/ucrt/x64/ucrt.lib"
+    },
+    "path_warning": "PATH clang is LLVM-MinGW22.1.7 windows-gnu, a different candidate. PATH has no cmake/hipcc/cl; exact paths are required for reproducible build investigation."
+  },
+  "dlls_on_disk_not_loaded": [
+    "C:/Develop/AI/StrataMod/.vision-venv-10.1/Lib/site-packages/_rocm_sdk_core/bin/amdhip64_7.dll",
+    "C:/Develop/AI/StrataMod/.vision-venv-10.1/Lib/site-packages/_rocm_sdk_libraries/bin/hipblas.dll",
+    "C:/Develop/AI/StrataMod/.vision-venv-10.1/Lib/site-packages/_rocm_sdk_libraries/bin/rocblas.dll",
+    "C:/Develop/AI/StrataMod/.vision-venv-10.1/Lib/site-packages/_rocm_sdk_libraries/bin/libhipblaslt.dll"
+  ],
+  "existing_logical_bytes_already_accounted_in_free_disk": {
+    "vision_venv": 8848911906,
+    "vision_toolchain": 6294479909,
+    "vision_build": 1793322997,
+    "strata_engine": 2201154652,
+    "deepseek_worktree_before_extensions": 53981587
+  },
+  "unperformed": ["native compilation", "GPU context/allocation/kernel", "loaded DLL identity", "WDDM budget", "full source/model download", "runtime status/start/stop"]
+}

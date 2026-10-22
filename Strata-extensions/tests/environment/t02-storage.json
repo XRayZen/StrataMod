@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "snapshot": "t02-inventory.json fresh 2026-10-21T00:38:04.2412988+09:00",
+  "model_root": "C:/Develop/AI/Model",
+  "model_revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+  "model_variant": "UD-Q4_K_XL",
+  "source_bytes": 500707576573,
+  "free_bytes_at_snapshot": 609457401856,
+  "bounded_development_estimate_bytes": {
+    "read_only_existing_toolchain_increment": 0,
+    "nine_headers_64MiB_each": 603979776,
+    "real_weight_fixtures_512MiB": 536870912,
+    "early_target_build_8GiB": 8589934592,
+    "fixed_vendor_sources_1GiB": 1073741824,
+    "bounded_transfer_temporary_512MiB": 536870912
+  },
+  "bounded_development_total_bytes": 11341398016,
+  "bounded_development_snapshot_remainder_bytes": 598116003840,
+  "one_source_plus_bounded_development_bytes": 512048974589,
+  "one_source_plus_bounded_snapshot_remainder_bytes": 97408427267,
+  "two_full_sources_bytes": 1001415153146,
+  "two_full_sources_fit_snapshot": false,
+  "interpretation": "Development estimates, not measured peak use or a general runtime disk headroom rule. T03/T06 may start bounded work; estimates must be revised if insufficient. Never report incomplete fixtures as PASS.",
+  "download_assumption_to_verify_in_T05": "One raw copy written directly to a same-volume .part and renamed, without full xet/cache copy or full native repack. This is a planned strategy, not implemented evidence.",
+  "comparison_strategy": "Bounded numerical fixtures and reference outputs, no second 500GB model copy planned.",
+  "unknown_additional_peak_bytes": ["full backend builds and installed bundles", "adopted external source size beyond the initial estimate", "backend-specific intermediate/temp/cache peaks", "comparison outputs beyond bounded fixtures", "wheel/extraction cache if new packages become necessary"],
+  "toolchain_copy_alternative": {"venv_plus_toolchain_logical_bytes": 15143391815, "status": "not planned; if ownership/copy becomes necessary add these measured logical bytes plus extraction/temp/cache to the next phase calculation"},
+  "before_each_phase": "Refresh free disk, measure retained files, add the required incremental source/build/bundle/comparison/temp peak. In particular reassess actual T05 composition and capacity before full download. Unknown future full-build peaks are not T02 dependency gates and are not guaranteed by this snapshot.",
+  "normal_use_policy": "No changes to model availability, output, thought, retry, compact, context or required normal start steps. Test acquisition/build estimates stay within development work."
+}
