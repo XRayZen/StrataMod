@@ -1,3 +1,6 @@
+> **StrataMod** is a maintenance fork of official Strata v0.1.45. It keeps opt-in Windows HIP image support, multiple-image processing and an optional local Windows ownership/calibration adapter. See [scope, validation and upstream overlap](docs/STRATAMOD.md).
+> Private models, SDKs, images, installation receipts and diagnostic records are not distributed. The official setup instructions below remain the general installation entry.
+
 <h1 align="center">Strata</h1>
 
 **English** · [简体中文](README.zh-CN.md) · [日本語](README.ja.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [Español](README.es.md) · [Português](README.pt-BR.md)

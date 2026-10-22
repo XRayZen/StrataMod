@@ -64,3 +64,29 @@ build-vision-cuda12.bat
 
 # local Windows HIP packaging output
 dist-hip/
+
+# StrataMod isolated evaluation and vision SDK/build products
+/.vision-venv-*/
+/.vision-sycl-venv/
+/.vision-build/
+/.vision-pip-cache/
+/.vision-src/
+/.vision-tmp/
+/.vision-toolchain/
+/local_runtime/records/*
+/local_runtime/runs/
+/local_runtime/profiles/*.json
+
+# Private machine authorities, runtime output and historical work journals.
+/local_runtime/normal/
+/local_runtime/calibration-runs/
+/local_runtime/calibration-selected.json
+/installed.json
+/memory-*.jsonl
+/tmp*/
+/strata-vision-*/
+/docs/.qa/
+/docs/Plan/
+/docs/Inprogress/
+/docs/CURRENT.md
+/docs/StrataMod-summary.html
