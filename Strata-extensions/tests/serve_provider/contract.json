@@ -1,0 +1,24 @@
+{
+  "scope": "normal DeepSeek producer through existing server family hooks",
+  "vocabulary": 129280,
+  "eos": 1,
+  "official_revision": "935817c66f5d6e64838f419692545f06787e485f",
+  "native_revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+  "max_tokens_upper": 393216,
+  "sampler": {
+    "history": "prompt original IDs plus sampled generated IDs of current request",
+    "absent_last_n": "whole history",
+    "top_k_zero": "full vocabulary",
+    "logprobs": "adjusted logits before temperature and truncation",
+    "sampling": "effective temperature -> top_k -> relative-max min_p -> top_p -> CDF",
+    "tie": "original ID ascending"
+  },
+  "metadata": {
+    "schema": "strata-generation-metadata/v1",
+    "domain_utf8_nul": true,
+    "record": "LEu32 rawID + u8 LPpresence + optional(LEf32 selected + LEu32 alternatives + repeated LEu32 ID/LEf32 LP)",
+    "finish": "LEu32 origin ascii byte count + origin bytes"
+  },
+  "normal_audit_d2h": false,
+  "fixtures_do_not_limit_normal_context_or_output": true
+}

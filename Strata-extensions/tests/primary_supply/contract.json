@@ -1,0 +1,9 @@
+{
+ "schema":"t18-primary-supply/v1","scope":"offline bounded projection supply; full T05/T10 pending",
+ "matrix_selection":[{"tensor":"blk.0.ffn_up_exps.weight","expert":38},{"tensor":"blk.0.ffn_up_shexp.weight","expert":null},{"tensor":"blk.0.ffn_down_shexp.weight","expert":null}],
+ "batches":[1,2,4,8],"input":"FP32 dyadic ((arange*17)%255-127)/8192; not BF16 exact",
+ "comparison":"ordered K FP32 multiply/add, nonFMA, all output bits, same independent T09 Q",
+ "cache_slots_fixture":2,"ram_slots_fixture":2,"weight_capacity":12533760,"input_capacity":163840,"output_capacity":163840,
+ "io_buffers":2,"io_buffer_bytes":65536,"generated_estimate":2147483648,"new_raw_bytes":0,
+ "ordinary_cache_context_limit_added":false,"physical_io_context_internal_peak":null
+}

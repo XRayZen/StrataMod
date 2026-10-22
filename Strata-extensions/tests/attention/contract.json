@@ -1,0 +1,152 @@
+{
+  "schema": "strata-t15-attention-contract/v1",
+  "scope": "offline canonical attention/index preparation; no fullsource/fullmodel/resident qualification",
+  "source": {
+    "HF_revision": "1bae0e1088993b9b82de08f59de5be5a34e42170",
+    "model_sha256": "e5decd76fe70fd56ef2f10124d245c6f64fb6a0003cc9068a1d3182a168b8d2d",
+    "kernel_sha256": "1236c3507019ed176f5dba5e04bcea58867cf654818c6cf138ed4845398c2455",
+    "model_lines": {
+      "indexer": [
+        488,
+        581
+      ],
+      "candidate": [
+        584,
+        611
+      ],
+      "attention": [
+        614,
+        791
+      ]
+    },
+    "kernel_lines": {
+      "index_fp4": [
+        128,
+        195
+      ],
+      "online": [
+        310,
+        403
+      ]
+    }
+  },
+  "N": {
+    "index_fp4": {
+      "zero_scale_code": 1,
+      "unit_scale_code": 127,
+      "element_values": [
+        "0",
+        ".25",
+        ".75",
+        "1.25",
+        "1.75",
+        "2.5",
+        "3.5",
+        "5",
+        "-0",
+        "-.25"
+      ],
+      "element_codes": [
+        0,
+        0,
+        2,
+        2,
+        4,
+        4,
+        6,
+        6,
+        8,
+        8
+      ]
+    },
+    "all_invalid": {
+      "initial_max": "caf249f1",
+      "denominator_class": "+inf",
+      "output": "00000000"
+    },
+    "online2block": {
+      "scale": "f304353d",
+      "alpha": "c2ee743f",
+      "prob_bf16": "0000753f",
+      "den1": "60777a42",
+      "acc1": [
+        "00000042",
+        "0040bd42"
+      ],
+      "den2": "60a37342",
+      "acc2": [
+        "61770242",
+        "8111bb42"
+      ],
+      "sink": "01586a3f",
+      "denominator": "c04c7742",
+      "output": [
+        "0000073f",
+        "0000c23f"
+      ]
+    },
+    "index_cast": {
+      "product": "0002823f",
+      "dot_f32": "00020243",
+      "dot_bf16": "00000243",
+      "weight_scaled": "0000803c",
+      "weighted_bf16": "00000240",
+      "sum_f32": "00008242",
+      "score_bf16": "00008242"
+    }
+  },
+  "precision": {
+    "native": "Q8_0/F32 fixed original storage; independent scalar decode and FP32 product/K-ascending/+0/nonFMA canonical, not official TensorCore reduction topology",
+    "qa": "BF16 x -> FP8block32/UE8M0 actQDQ -> nativeQ8 projection -> BF16/RMS1280 eps1e-20 -> BF16",
+    "qb": "attention32768 and indexer4096 both qr->FP8block32 actQDQ->nativeQ8dot->BF16",
+    "rotary": "compressratio>0 theta160000/YaRN for attention query/window/inverse and index; tail64 adjacent pairs, query absolute p and key j*ratio, never layer0 pureSWA theta10000",
+    "index": "wk and weights_proj official BF16 designated: no activationQDQ; nativeQ8 values remain native. wk dot->BF16/RMS128->BF16/RoPE->FP4block32UE8M0. weights_proj outputBF16 * 1/64 -> BF16; qk dotFP32->BF16/ReLU; weightproduct->BF16; heads32 orderedFP32sum->BF16",
+    "index_FP4": "max(amax,6*2^-126); FP32 * reciprocal1/6 -> pow2ceil; UE8M0; E2M1RNE/signedzero; in-place decodedBF16. Distinct from compressed512 block16/E4M3 and GGUF39 +0canonical",
+    "window": "SWA nativeQ8 projection->BF16/RMS512->BF16/RoPE->whole512FP8QDQ; wholeprefillchunk versus physicaldecode128ring",
+    "attention": "ordered64block online max/expFP32/sum; probBF16 before KV product; scaled previousFP32acc followed ascending64 products; FP32sink exponential denominator only; BF16 output",
+    "output": "inverseRoPE BF16 -> group8x4096 FP8QDQ -> nativeQ8 groupA1024 each -> BF16/flatten8192 -> FP8QDQ -> nativeQ8 outB5120 -> BF16",
+    "comparison": "local exp/rsqrt/rotary scalar <=2ULP; declared canonical stage/code/scale/selection/finalBF16 exact. Explicit expected -inf class for masked online scores and +inf class in all-invalid online denominator; finite substitutes rejected; no NaN inputs",
+    "G_derived_expectations": false
+  },
+  "selection": {
+    "candidate_source": 20,
+    "candidate_ratio": 1,
+    "topk_blocks": 2048,
+    "block_size": 8,
+    "index_topk": 512,
+    "source_layers": [
+      2,
+      8,
+      14,
+      20,
+      24,
+      28,
+      32,
+      36
+    ],
+    "key_owners": [
+      2,
+      8,
+      14,
+      20
+    ],
+    "rule": "blockmax/newestpartial pin/drop-minus-inf; keep complete block mask and separate query visibility. Consumer uses source20 candidates and own scores, final selected positions ascending then window offset; unavailable -1",
+    "tie": "rounded BF16 mandatory-above-boundary plus permitted tie set, strict mask/count/unique/order; deterministic minimum-ID canonical implementation, no Torch tie-order equivalence claim"
+  },
+  "fixtures": {
+    "unique_inputs": "8 total, first4A and last4Bholdout; all periodic sequence reuse explicitly declared",
+    "real": "layer2/20 fullattention and index2/20/24 actualweight short context; B1/2/4/8 projection and short1/2/3/8, not full Cartesian longcontext qualification",
+    "controlled": "visible16383/16384/16385, online64/sink/all-1, FP4floor/RNE/cast/tie, combined prefill/decode indices; syntheticlong is not learned fullcontext"
+  },
+  "lifetime": "task-owned synchronous host-wrapper views/epoch/writer; T14 actualG prelatent/cache qualified copy in fixture. No resident device-hit or asynchronous engine-supply claim. Fixedjob expectedallocation from shape/lifetime before G; observed0/under/over/bool/batch mutation rejected",
+  "raw": {
+    "files": 28,
+    "bytes": 293415424,
+    "source": "individual finalized SHA-bound shard9 only, original absolute source span preserved",
+    "HTTP": false,
+    "part_read": false,
+    "full_model_copy": false
+  },
+  "completion": "T05 whole9 receipt -> T10 actualfullsource -> T15 finalsource review; task pending",
+  "G_executed": false
+}

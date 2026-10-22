@@ -1,0 +1,64 @@
+{
+  "repo": "unsloth/DeepSeek-V4.1-Flash-1017-GGUF",
+  "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+  "metadata_url": "https://huggingface.co/api/models/unsloth/DeepSeek-V4.1-Flash-1017-GGUF/revision/f924b94f19c1fea02c06a65c8475b0a45e2b88b1?blobs=true",
+  "metadata_sha256": "2fe5786ceb9f0b5add3965c04ea54f5520046b697c47024a3de3dd97b08f21de",
+  "captured_utc": "2026-10-20T15:46:25.260995+00:00",
+  "identity": "siblings.lfs.sha256, not blobId Git pointer",
+  "files": [
+    {
+      "index": 1,
+      "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00001-of-00009.gguf",
+      "bytes": 5780589,
+      "lfs_sha256": "cc15d470afcb030558bbc4d8e2ccd840182e2e95de1a95198138efe63a5fd99f"
+    },
+    {
+      "index": 2,
+      "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00002-of-00009.gguf",
+      "bytes": 48129640000,
+      "lfs_sha256": "17df217d8fc26a39f21ea40805dc6ab788c7ce8623a59a95c431051df7eafc94"
+    },
+    {
+      "index": 3,
+      "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00003-of-00009.gguf",
+      "bytes": 48129640000,
+      "lfs_sha256": "0c8065f620a049cb437024c54ff12c314c94603a1cc683f5191be4689d6d6d3b"
+    },
+    {
+      "index": 4,
+      "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00004-of-00009.gguf",
+      "bytes": 48129640000,
+      "lfs_sha256": "3bd8b2ebf8f51d8708a73ae0895f8d4acc7e4c983ba4e89d038492b203cc89ac"
+    },
+    {
+      "index": 5,
+      "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00005-of-00009.gguf",
+      "bytes": 48129640000,
+      "lfs_sha256": "929054a6bbf3701765779b58c37988b6c6284a3b8413901858b59c0e95f37cc3"
+    },
+    {
+      "index": 6,
+      "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00006-of-00009.gguf",
+      "bytes": 48129640000,
+      "lfs_sha256": "49d3de04bd6a09de786c9ef7db900eae02ee9fd391573f91a923013d7d5b24d3"
+    },
+    {
+      "index": 7,
+      "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00007-of-00009.gguf",
+      "bytes": 48129640000,
+      "lfs_sha256": "f18feae5878dd680f1ea87ecd1d84f4fb098480298b25a3162dcbdab8dc2ca5b"
+    },
+    {
+      "index": 8,
+      "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00008-of-00009.gguf",
+      "bytes": 202758032592,
+      "lfs_sha256": "12df293355efbd104b088a77e13ee22410fb1ec3f7ab3863947f09896e64bec7"
+    },
+    {
+      "index": 9,
+      "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+      "bytes": 9165923392,
+      "lfs_sha256": "c21ad6105a780bc2f44eb7dd41f9b1a1efb4e8ec87618f60b733bc2652bd2ffe"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schema": "T35-tile-rows-contract/v1",
+  "byte_cap": 2097152,
+  "row_budgets": [256, 1713],
+  "types": {"0": [1, 4], "8": [32, 34], "39": [32, 17], "43": [32, 33]},
+  "projection_shapes": [[39, 2304, 5120, 1, 2307], [39, 5120, 2304, 1, 5123]],
+  "stream": "one checked stream; full-K and canonical output row offsets",
+  "quant": "accepted immutable old quant 29d9bf0ad876688d2db80d6f5e9a5cdeecb927ebece5cd17b3b2e3d6ab3007da",
+  "arithmetic": "FP32 product then ascending-K FP32 accumulation from +0; no FMA",
+  "normal_default_modified": false,
+  "original_model_payload_read_bytes": 0,
+  "normal_AB": "one fresh A256/B1713 pair only after Q/source/input review; same native and budget; no CI",
+  "DRAM": "approximately 8GiB remaining, report-only, no filler",
+  "model_speed_qualified": false
+}

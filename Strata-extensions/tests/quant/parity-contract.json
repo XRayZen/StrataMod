@@ -1,0 +1,18 @@
+{
+  "version": "T09-pre-v2",
+  "types": {"0":"F32", "8":"GGML Q8_0", "39":"native MXFP4 canonical +0 nibble0/8", "43":"Maya MXFP8 FP32 scale first"},
+  "unqualified_types": [67,117],
+  "experts": [0,1,2,3,4,5],
+  "batches": [1,2,4,8],
+  "matrix_shapes": {"gate":[2304,5120],"up":[2304,5120],"down":[5120,2304]},
+  "activation_families": ["dense_dyadic","cancellation"],
+  "seed": 20261021,
+  "decode_gate": "all real decoded FP32 bits; literal nonfinite classification only",
+  "projection_gate": "all output bits exact vs independent ordered Q, FP32 +0 initial accumulator, ascending K, separate FP32 multiply then add, no FMA/reassociation/FTZ",
+  "diagnostic": "FP64 independent sum, nextafter(S_hat/(1-gamma_K64),+inf), upward gamma/bound, (gamma_2K32+gamma_K64)*S_up+2*K*2^-149; never substitute for output-bit gate",
+  "fixture_scope": "six distinct layer0 experts gate/up/down; real Q8 H5120, MXFP8 Engram256, F32 norm5120",
+  "primary": "0000:07:00.0",
+  "secondary_additional": "0000:03:00.0",
+  "excluded": ["full FFN", "learned router", "official activation FP8 QDQ", "full model", "peer", "simultaneous multiGPU", "CPU fallback"],
+  "scope_limit": "ordered arithmetic constrains this fixture only, not future optimized runtime kernels"
+}

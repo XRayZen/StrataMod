@@ -1,0 +1,33 @@
+{
+  "schema": "strata-t44-contract/v1",
+  "source_scope": "approved pre-v3",
+  "original_top_k": 6,
+  "expert_count": 384,
+  "hidden": 5120,
+  "intermediate": 2304,
+  "canonical_combine": "ascending original expert ID; one adoption; shared once; final BF16 unchanged",
+  "fixture_assignment": "even IDs secondary only for qualification",
+  "fixture_slots": 2,
+  "normal_slots": "caller actual capacity, not fixed fixture count",
+  "required_full_sequence": {
+    "raw_tokens": [
+      3,
+      37,
+      1024
+    ],
+    "frames": 120,
+    "primary_calls": 365,
+    "secondary_calls": 355,
+    "logits": 387840
+  },
+  "expected_transfer": {
+    "input": 7270400,
+    "route": 1420,
+    "down": 7270400,
+    "total": 14542220
+  },
+  "precision": "Q/G exact bits/classes at original stage; no widened envelope",
+  "worker": "single secondary owns every mutable CopyTask/ResidentSlot/lease; primary exchanges value tickets/messages only",
+  "normal_audit_D2H": false,
+  "GPU_executed": false
+}

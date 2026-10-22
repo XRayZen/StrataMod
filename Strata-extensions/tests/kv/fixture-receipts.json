@@ -1,0 +1,418 @@
+{
+  "schema": "strata-t14-local-fixtures/v1",
+  "full_model_source_qualified": false,
+  "total_fixture_bytes": 22292480,
+  "fixtures": [
+    {
+      "shard_index": 9,
+      "tensor": "blk.2.attn_compressor_kv.weight",
+      "type_id": 8,
+      "layout": "Q8_0",
+      "dims_ggml": [
+        5120,
+        512
+      ],
+      "row_bytes": 5440,
+      "absolute_offset": 1074084160,
+      "bytes": 2785280,
+      "source": {
+        "path": "C:\\Develop\\AI\\Model\\DeepSeek-V4.1-Flash-1017-GGUF\\f924b94f19c1fea02c06a65c8475b0a45e2b88b1\\UD-Q4_K_XL\\DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+        "file_identity": {
+          "device": 18218275959135613662,
+          "file_id": 4222124651555181,
+          "bytes": 9165923392,
+          "mtime_ns": 1792517468612680800
+        },
+        "acquisition_checkpoint": "C:\\Develop\\AI\\Model\\DeepSeek-V4.1-Flash-1017-GGUF\\f924b94f19c1fea02c06a65c8475b0a45e2b88b1\\UD-Q4_K_XL\\DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf.part.json",
+        "checkpoint_sha256": "5fb2f95cc8ef4cb320c63582dba79c72501cc860bc58d429922873588a5bd96f",
+        "file_lfs_sha256": "c21ad6105a780bc2f44eb7dd41f9b1a1efb4e8ec87618f60b733bc2652bd2ffe",
+        "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+        "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+        "bytes": 9165923392,
+        "header_sha256": "15424da1eeadc818c22e828b00f824724eecc639e0b8b34b5219009f6ec4896f",
+        "qualification": "individual finalized acquisition observation and current stat/header; all9 receipt pending"
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t14-20261021\\weights\\blk-2-attn_compressor_kv-weight.bin",
+      "fixture_sha256": "cb86b1f7dadb4bff38d417d86843abd9156190467672a5ddeaed1e9de8111a7a"
+    },
+    {
+      "shard_index": 9,
+      "tensor": "blk.2.attn_compressor_norm.weight",
+      "type_id": 0,
+      "layout": "F32",
+      "dims_ggml": [
+        512
+      ],
+      "row_bytes": 2048,
+      "absolute_offset": 1071296832,
+      "bytes": 2048,
+      "source": {
+        "path": "C:\\Develop\\AI\\Model\\DeepSeek-V4.1-Flash-1017-GGUF\\f924b94f19c1fea02c06a65c8475b0a45e2b88b1\\UD-Q4_K_XL\\DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+        "file_identity": {
+          "device": 18218275959135613662,
+          "file_id": 4222124651555181,
+          "bytes": 9165923392,
+          "mtime_ns": 1792517468612680800
+        },
+        "acquisition_checkpoint": "C:\\Develop\\AI\\Model\\DeepSeek-V4.1-Flash-1017-GGUF\\f924b94f19c1fea02c06a65c8475b0a45e2b88b1\\UD-Q4_K_XL\\DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf.part.json",
+        "checkpoint_sha256": "5fb2f95cc8ef4cb320c63582dba79c72501cc860bc58d429922873588a5bd96f",
+        "file_lfs_sha256": "c21ad6105a780bc2f44eb7dd41f9b1a1efb4e8ec87618f60b733bc2652bd2ffe",
+        "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+        "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+        "bytes": 9165923392,
+        "header_sha256": "15424da1eeadc818c22e828b00f824724eecc639e0b8b34b5219009f6ec4896f",
+        "qualification": "individual finalized acquisition observation and current stat/header; all9 receipt pending"
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t14-20261021\\weights\\blk-2-attn_compressor_norm-weight.bin",
+      "fixture_sha256": "6905b3b1bc6b3ec7ef6ac89c3c60f4b3e1e9ac9d0d2bbba9303929767f37911a"
+    },
+    {
+      "shard_index": 9,
+      "tensor": "blk.2.attn_compressor_gate.weight",
+      "type_id": 8,
+      "layout": "Q8_0",
+      "dims_ggml": [
+        5120,
+        512
+      ],
+      "row_bytes": 5440,
+      "absolute_offset": 1071298880,
+      "bytes": 2785280,
+      "source": {
+        "path": "C:\\Develop\\AI\\Model\\DeepSeek-V4.1-Flash-1017-GGUF\\f924b94f19c1fea02c06a65c8475b0a45e2b88b1\\UD-Q4_K_XL\\DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+        "file_identity": {
+          "device": 18218275959135613662,
+          "file_id": 4222124651555181,
+          "bytes": 9165923392,
+          "mtime_ns": 1792517468612680800
+        },
+        "acquisition_checkpoint": "C:\\Develop\\AI\\Model\\DeepSeek-V4.1-Flash-1017-GGUF\\f924b94f19c1fea02c06a65c8475b0a45e2b88b1\\UD-Q4_K_XL\\DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf.part.json",
+        "checkpoint_sha256": "5fb2f95cc8ef4cb320c63582dba79c72501cc860bc58d429922873588a5bd96f",
+        "file_lfs_sha256": "c21ad6105a780bc2f44eb7dd41f9b1a1efb4e8ec87618f60b733bc2652bd2ffe",
+        "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+        "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+        "bytes": 9165923392,
+        "header_sha256": "15424da1eeadc818c22e828b00f824724eecc639e0b8b34b5219009f6ec4896f",
+        "qualification": "individual finalized acquisition observation and current stat/header; all9 receipt pending"
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t14-20261021\\weights\\blk-2-attn_compressor_gate-weight.bin",
+      "fixture_sha256": "a329d5eced45abd6d8094ae8716ab964cc0153c747eae201ef45087ad966cff5"
+    },
+    {
+      "shard_index": 9,
+      "tensor": "blk.8.attn_compressor_kv.weight",
+      "type_id": 8,
+      "layout": "Q8_0",
+      "dims_ggml": [
+        5120,
+        512
+      ],
+      "row_bytes": 5440,
+      "absolute_offset": 2189342528,
+      "bytes": 2785280,
+      "source": {
+        "path": "C:\\Develop\\AI\\Model\\DeepSeek-V4.1-Flash-1017-GGUF\\f924b94f19c1fea02c06a65c8475b0a45e2b88b1\\UD-Q4_K_XL\\DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+        "file_identity": {
+          "device": 18218275959135613662,
+          "file_id": 4222124651555181,
+          "bytes": 9165923392,
+          "mtime_ns": 1792517468612680800
+        },
+        "acquisition_checkpoint": "C:\\Develop\\AI\\Model\\DeepSeek-V4.1-Flash-1017-GGUF\\f924b94f19c1fea02c06a65c8475b0a45e2b88b1\\UD-Q4_K_XL\\DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf.part.json",
+        "checkpoint_sha256": "5fb2f95cc8ef4cb320c63582dba79c72501cc860bc58d429922873588a5bd96f",
+        "file_lfs_sha256": "c21ad6105a780bc2f44eb7dd41f9b1a1efb4e8ec87618f60b733bc2652bd2ffe",
+        "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+        "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+        "bytes": 9165923392,
+        "header_sha256": "15424da1eeadc818c22e828b00f824724eecc639e0b8b34b5219009f6ec4896f",
+        "qualification": "individual finalized acquisition observation and current stat/header; all9 receipt pending"
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t14-20261021\\weights\\blk-8-attn_compressor_kv-weight.bin",
+      "fixture_sha256": "dfaf4213e26d001cbf8548e79c7f9f36cf84087264d7824c5da0d1476d1598d3"
+    },
+    {
+      "shard_index": 9,
+      "tensor": "blk.8.attn_compressor_norm.weight",
+      "type_id": 0,
+      "layout": "F32",
+      "dims_ggml": [
+        512
+      ],
+      "row_bytes": 2048,
+      "absolute_offset": 2186555200,
+      "bytes": 2048,
+      "source": {
+        "path": "C:\\Develop\\AI\\Model\\DeepSeek-V4.1-Flash-1017-GGUF\\f924b94f19c1fea02c06a65c8475b0a45e2b88b1\\UD-Q4_K_XL\\DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+        "file_identity": {
+          "device": 18218275959135613662,
+          "file_id": 4222124651555181,
+          "bytes": 9165923392,
+          "mtime_ns": 1792517468612680800
+        },
+        "acquisition_checkpoint": "C:\\Develop\\AI\\Model\\DeepSeek-V4.1-Flash-1017-GGUF\\f924b94f19c1fea02c06a65c8475b0a45e2b88b1\\UD-Q4_K_XL\\DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf.part.json",
+        "checkpoint_sha256": "5fb2f95cc8ef4cb320c63582dba79c72501cc860bc58d429922873588a5bd96f",
+        "file_lfs_sha256": "c21ad6105a780bc2f44eb7dd41f9b1a1efb4e8ec87618f60b733bc2652bd2ffe",
+        "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+        "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+        "bytes": 9165923392,
+        "header_sha256": "15424da1eeadc818c22e828b00f824724eecc639e0b8b34b5219009f6ec4896f",
+        "qualification": "individual finalized acquisition observation and current stat/header; all9 receipt pending"
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t14-20261021\\weights\\blk-8-attn_compressor_norm-weight.bin",
+      "fixture_sha256": "0a8c30d2ba015698d5c6a35bcc40e9f5adbd6eed9a5bfdf2da5e2a6b2cd97408"
+    },
+    {
+      "shard_index": 9,
+      "tensor": "blk.8.attn_compressor_gate.weight",
+      "type_id": 8,
+      "layout": "Q8_0",
+      "dims_ggml": [
+        5120,
+        512
+      ],
+      "row_bytes": 5440,
+      "absolute_offset": 2186557248,
+      "bytes": 2785280,
+      "source": {
+        "path": "C:\\Develop\\AI\\Model\\DeepSeek-V4.1-Flash-1017-GGUF\\f924b94f19c1fea02c06a65c8475b0a45e2b88b1\\UD-Q4_K_XL\\DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+        "file_identity": {
+          "device": 18218275959135613662,
+          "file_id": 4222124651555181,
+          "bytes": 9165923392,
+          "mtime_ns": 1792517468612680800
+        },
+        "acquisition_checkpoint": "C:\\Develop\\AI\\Model\\DeepSeek-V4.1-Flash-1017-GGUF\\f924b94f19c1fea02c06a65c8475b0a45e2b88b1\\UD-Q4_K_XL\\DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf.part.json",
+        "checkpoint_sha256": "5fb2f95cc8ef4cb320c63582dba79c72501cc860bc58d429922873588a5bd96f",
+        "file_lfs_sha256": "c21ad6105a780bc2f44eb7dd41f9b1a1efb4e8ec87618f60b733bc2652bd2ffe",
+        "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+        "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+        "bytes": 9165923392,
+        "header_sha256": "15424da1eeadc818c22e828b00f824724eecc639e0b8b34b5219009f6ec4896f",
+        "qualification": "individual finalized acquisition observation and current stat/header; all9 receipt pending"
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t14-20261021\\weights\\blk-8-attn_compressor_gate-weight.bin",
+      "fixture_sha256": "052ff1198c216398cd319df662e3c1cbb968029b4ba1f08f6c0f529a45c92a52"
+    },
+    {
+      "shard_index": 9,
+      "tensor": "blk.14.attn_compressor_kv.weight",
+      "type_id": 8,
+      "layout": "Q8_0",
+      "dims_ggml": [
+        5120,
+        512
+      ],
+      "row_bytes": 5440,
+      "absolute_offset": 3304600896,
+      "bytes": 2785280,
+      "source": {
+        "path": "C:\\Develop\\AI\\Model\\DeepSeek-V4.1-Flash-1017-GGUF\\f924b94f19c1fea02c06a65c8475b0a45e2b88b1\\UD-Q4_K_XL\\DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+        "file_identity": {
+          "device": 18218275959135613662,
+          "file_id": 4222124651555181,
+          "bytes": 9165923392,
+          "mtime_ns": 1792517468612680800
+        },
+        "acquisition_checkpoint": "C:\\Develop\\AI\\Model\\DeepSeek-V4.1-Flash-1017-GGUF\\f924b94f19c1fea02c06a65c8475b0a45e2b88b1\\UD-Q4_K_XL\\DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf.part.json",
+        "checkpoint_sha256": "5fb2f95cc8ef4cb320c63582dba79c72501cc860bc58d429922873588a5bd96f",
+        "file_lfs_sha256": "c21ad6105a780bc2f44eb7dd41f9b1a1efb4e8ec87618f60b733bc2652bd2ffe",
+        "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+        "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+        "bytes": 9165923392,
+        "header_sha256": "15424da1eeadc818c22e828b00f824724eecc639e0b8b34b5219009f6ec4896f",
+        "qualification": "individual finalized acquisition observation and current stat/header; all9 receipt pending"
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t14-20261021\\weights\\blk-14-attn_compressor_kv-weight.bin",
+      "fixture_sha256": "d17f9b36255a50f234887f1cfa5fe4957aaeab96ddd8ef146eb1acaab2796902"
+    },
+    {
+      "shard_index": 9,
+      "tensor": "blk.14.attn_compressor_norm.weight",
+      "type_id": 0,
+      "layout": "F32",
+      "dims_ggml": [
+        512
+      ],
+      "row_bytes": 2048,
+      "absolute_offset": 3301813568,
+      "bytes": 2048,
+      "source": {
+        "path": "C:\\Develop\\AI\\Model\\DeepSeek-V4.1-Flash-1017-GGUF\\f924b94f19c1fea02c06a65c8475b0a45e2b88b1\\UD-Q4_K_XL\\DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+        "file_identity": {
+          "device": 18218275959135613662,
+          "file_id": 4222124651555181,
+          "bytes": 9165923392,
+          "mtime_ns": 1792517468612680800
+        },
+        "acquisition_checkpoint": "C:\\Develop\\AI\\Model\\DeepSeek-V4.1-Flash-1017-GGUF\\f924b94f19c1fea02c06a65c8475b0a45e2b88b1\\UD-Q4_K_XL\\DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf.part.json",
+        "checkpoint_sha256": "5fb2f95cc8ef4cb320c63582dba79c72501cc860bc58d429922873588a5bd96f",
+        "file_lfs_sha256": "c21ad6105a780bc2f44eb7dd41f9b1a1efb4e8ec87618f60b733bc2652bd2ffe",
+        "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+        "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+        "bytes": 9165923392,
+        "header_sha256": "15424da1eeadc818c22e828b00f824724eecc639e0b8b34b5219009f6ec4896f",
+        "qualification": "individual finalized acquisition observation and current stat/header; all9 receipt pending"
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t14-20261021\\weights\\blk-14-attn_compressor_norm-weight.bin",
+      "fixture_sha256": "a40a534cb7658e0dccf5388962d71363f37fa2cd8585eb55a56b05f372d4db2c"
+    },
+    {
+      "shard_index": 9,
+      "tensor": "blk.14.attn_compressor_gate.weight",
+      "type_id": 8,
+      "layout": "Q8_0",
+      "dims_ggml": [
+        5120,
+        512
+      ],
+      "row_bytes": 5440,
+      "absolute_offset": 3301815616,
+      "bytes": 2785280,
+      "source": {
+        "path": "C:\\Develop\\AI\\Model\\DeepSeek-V4.1-Flash-1017-GGUF\\f924b94f19c1fea02c06a65c8475b0a45e2b88b1\\UD-Q4_K_XL\\DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+        "file_identity": {
+          "device": 18218275959135613662,
+          "file_id": 4222124651555181,
+          "bytes": 9165923392,
+          "mtime_ns": 1792517468612680800
+        },
+        "acquisition_checkpoint": "C:\\Develop\\AI\\Model\\DeepSeek-V4.1-Flash-1017-GGUF\\f924b94f19c1fea02c06a65c8475b0a45e2b88b1\\UD-Q4_K_XL\\DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf.part.json",
+        "checkpoint_sha256": "5fb2f95cc8ef4cb320c63582dba79c72501cc860bc58d429922873588a5bd96f",
+        "file_lfs_sha256": "c21ad6105a780bc2f44eb7dd41f9b1a1efb4e8ec87618f60b733bc2652bd2ffe",
+        "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+        "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+        "bytes": 9165923392,
+        "header_sha256": "15424da1eeadc818c22e828b00f824724eecc639e0b8b34b5219009f6ec4896f",
+        "qualification": "individual finalized acquisition observation and current stat/header; all9 receipt pending"
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t14-20261021\\weights\\blk-14-attn_compressor_gate-weight.bin",
+      "fixture_sha256": "9ac98e518dcc57e07db42e274ba332c402d73226e7f3bafe646277cdd7aa0a91"
+    },
+    {
+      "shard_index": 9,
+      "tensor": "blk.20.attn_compressor_kv.weight",
+      "type_id": 8,
+      "layout": "Q8_0",
+      "dims_ggml": [
+        5120,
+        512
+      ],
+      "row_bytes": 5440,
+      "absolute_offset": 4417073984,
+      "bytes": 2785280,
+      "source": {
+        "path": "C:\\Develop\\AI\\Model\\DeepSeek-V4.1-Flash-1017-GGUF\\f924b94f19c1fea02c06a65c8475b0a45e2b88b1\\UD-Q4_K_XL\\DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+        "file_identity": {
+          "device": 18218275959135613662,
+          "file_id": 4222124651555181,
+          "bytes": 9165923392,
+          "mtime_ns": 1792517468612680800
+        },
+        "acquisition_checkpoint": "C:\\Develop\\AI\\Model\\DeepSeek-V4.1-Flash-1017-GGUF\\f924b94f19c1fea02c06a65c8475b0a45e2b88b1\\UD-Q4_K_XL\\DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf.part.json",
+        "checkpoint_sha256": "5fb2f95cc8ef4cb320c63582dba79c72501cc860bc58d429922873588a5bd96f",
+        "file_lfs_sha256": "c21ad6105a780bc2f44eb7dd41f9b1a1efb4e8ec87618f60b733bc2652bd2ffe",
+        "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+        "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+        "bytes": 9165923392,
+        "header_sha256": "15424da1eeadc818c22e828b00f824724eecc639e0b8b34b5219009f6ec4896f",
+        "qualification": "individual finalized acquisition observation and current stat/header; all9 receipt pending"
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t14-20261021\\weights\\blk-20-attn_compressor_kv-weight.bin",
+      "fixture_sha256": "d5e2027ceed6a42d9bd57d62e3039025be3a05ecfd36c6209bc2210f24f95cf4"
+    },
+    {
+      "shard_index": 9,
+      "tensor": "blk.20.attn_compressor_norm.weight",
+      "type_id": 0,
+      "layout": "F32",
+      "dims_ggml": [
+        512
+      ],
+      "row_bytes": 2048,
+      "absolute_offset": 4417071936,
+      "bytes": 2048,
+      "source": {
+        "path": "C:\\Develop\\AI\\Model\\DeepSeek-V4.1-Flash-1017-GGUF\\f924b94f19c1fea02c06a65c8475b0a45e2b88b1\\UD-Q4_K_XL\\DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+        "file_identity": {
+          "device": 18218275959135613662,
+          "file_id": 4222124651555181,
+          "bytes": 9165923392,
+          "mtime_ns": 1792517468612680800
+        },
+        "acquisition_checkpoint": "C:\\Develop\\AI\\Model\\DeepSeek-V4.1-Flash-1017-GGUF\\f924b94f19c1fea02c06a65c8475b0a45e2b88b1\\UD-Q4_K_XL\\DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf.part.json",
+        "checkpoint_sha256": "5fb2f95cc8ef4cb320c63582dba79c72501cc860bc58d429922873588a5bd96f",
+        "file_lfs_sha256": "c21ad6105a780bc2f44eb7dd41f9b1a1efb4e8ec87618f60b733bc2652bd2ffe",
+        "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+        "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+        "bytes": 9165923392,
+        "header_sha256": "15424da1eeadc818c22e828b00f824724eecc639e0b8b34b5219009f6ec4896f",
+        "qualification": "individual finalized acquisition observation and current stat/header; all9 receipt pending"
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t14-20261021\\weights\\blk-20-attn_compressor_norm-weight.bin",
+      "fixture_sha256": "a277fb0dcce405580e2c9429c62502ef816ac423cdc68d3f727f9b4fd7bce5b1"
+    },
+    {
+      "shard_index": 9,
+      "tensor": "blk.0.attn_kv.weight",
+      "type_id": 8,
+      "layout": "Q8_0",
+      "dims_ggml": [
+        5120,
+        512
+      ],
+      "row_bytes": 5440,
+      "absolute_offset": 703347008,
+      "bytes": 2785280,
+      "source": {
+        "path": "C:\\Develop\\AI\\Model\\DeepSeek-V4.1-Flash-1017-GGUF\\f924b94f19c1fea02c06a65c8475b0a45e2b88b1\\UD-Q4_K_XL\\DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+        "file_identity": {
+          "device": 18218275959135613662,
+          "file_id": 4222124651555181,
+          "bytes": 9165923392,
+          "mtime_ns": 1792517468612680800
+        },
+        "acquisition_checkpoint": "C:\\Develop\\AI\\Model\\DeepSeek-V4.1-Flash-1017-GGUF\\f924b94f19c1fea02c06a65c8475b0a45e2b88b1\\UD-Q4_K_XL\\DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf.part.json",
+        "checkpoint_sha256": "5fb2f95cc8ef4cb320c63582dba79c72501cc860bc58d429922873588a5bd96f",
+        "file_lfs_sha256": "c21ad6105a780bc2f44eb7dd41f9b1a1efb4e8ec87618f60b733bc2652bd2ffe",
+        "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+        "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+        "bytes": 9165923392,
+        "header_sha256": "15424da1eeadc818c22e828b00f824724eecc639e0b8b34b5219009f6ec4896f",
+        "qualification": "individual finalized acquisition observation and current stat/header; all9 receipt pending"
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t14-20261021\\weights\\blk-0-attn_kv-weight.bin",
+      "fixture_sha256": "c8a58360ecf330ce34451ff2097a18a06e28507d672b2e10210fe08611a3c770"
+    },
+    {
+      "shard_index": 9,
+      "tensor": "blk.0.attn_kv_a_norm.weight",
+      "type_id": 0,
+      "layout": "F32",
+      "dims_ggml": [
+        512
+      ],
+      "row_bytes": 2048,
+      "absolute_offset": 703339840,
+      "bytes": 2048,
+      "source": {
+        "path": "C:\\Develop\\AI\\Model\\DeepSeek-V4.1-Flash-1017-GGUF\\f924b94f19c1fea02c06a65c8475b0a45e2b88b1\\UD-Q4_K_XL\\DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+        "file_identity": {
+          "device": 18218275959135613662,
+          "file_id": 4222124651555181,
+          "bytes": 9165923392,
+          "mtime_ns": 1792517468612680800
+        },
+        "acquisition_checkpoint": "C:\\Develop\\AI\\Model\\DeepSeek-V4.1-Flash-1017-GGUF\\f924b94f19c1fea02c06a65c8475b0a45e2b88b1\\UD-Q4_K_XL\\DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf.part.json",
+        "checkpoint_sha256": "5fb2f95cc8ef4cb320c63582dba79c72501cc860bc58d429922873588a5bd96f",
+        "file_lfs_sha256": "c21ad6105a780bc2f44eb7dd41f9b1a1efb4e8ec87618f60b733bc2652bd2ffe",
+        "filename": "UD-Q4_K_XL/DeepSeek-V4.1-Flash-1017-UD-Q4_K_XL-00009-of-00009.gguf",
+        "revision": "f924b94f19c1fea02c06a65c8475b0a45e2b88b1",
+        "bytes": 9165923392,
+        "header_sha256": "15424da1eeadc818c22e828b00f824724eecc639e0b8b34b5219009f6ec4896f",
+        "qualification": "individual finalized acquisition observation and current stat/header; all9 receipt pending"
+      },
+      "fixture_path": "C:\\Develop\\AI\\Strata-data\\records\\deepseek-v41\\t14-20261021\\weights\\blk-0-attn_kv_a_norm-weight.bin",
+      "fixture_sha256": "32649fe2b1d6d563a6657389a61e48749ad1f0102d6c4a56d3e8a6f8a7b5a922"
+    }
+  ]
+}

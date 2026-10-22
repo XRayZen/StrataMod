@@ -1,0 +1,88 @@
+{
+  "schema": "strata-t26-contract/v1",
+  "dependencies_final": true,
+  "status": "T20 finitewave1 Core and T25 original S5-2 numerical component accepted by Main after independent important findings 0; exact final receipts bound for T26 CPU qualification",
+  "raw_IDs": [
+    3,
+    37,
+    1024
+  ],
+  "positions": [
+    0,
+    1,
+    2
+  ],
+  "implicit_BOS": false,
+  "targets": [
+    37,
+    1024,
+    null
+  ],
+  "comparison": "original G-before canonical FP32/BF16/FP8 full logits bits exact; no post-G threshold adjustment",
+  "fixed_inputs": {
+    "T05": {
+      "path": "Strata-extensions/tests/artifact/full-model-receipt.json",
+      "sha256": "34adf6366f6c744eb48fa86b08801891b0278c48de6e7a7adfa2e40fca425b30"
+    },
+    "T10": {
+      "path": "build-deepseek-t10/bundle-offline-r7/full-source-verification.json",
+      "sha256": "db41734a163bf15b30b8051b7c13d2d7602c30412b9cff993354d0ed97395bf8"
+    },
+    "T20_capture": {
+      "path": "build-deepseek-t20/full-core-attempt-1/native-capture-receipt.json",
+      "sha256": "479ba3918ed8bf8af342207158edd20b8acf19df5569d3714db37de2ecc7b424"
+    },
+    "T20_CPU": {
+      "path": "build-deepseek-t20/full-core-attempt-1/cpu-validation-r2.json",
+      "sha256": "4b7970df98f26ac9f11a3e7c3d06a703ca8d07f203ff1ddfefe61b39793b8665"
+    },
+    "T20_native": {
+      "path": "build-deepseek-t20/full-core-attempt-1/captured-native.exe",
+      "sha256": "7a182b9a4b0bfe0b39b4c82da9f08eaecbebd4f70b840d97477b64469286507c"
+    },
+    "T20_Q": {
+      "path": "build-deepseek-t20/full-core-attempt-1/captured-Q-manifest.json",
+      "sha256": "afef342a7a9410fb5202f9c86bcf4e95ba0b5f8f7d9965ac5d6017879039bb0c"
+    },
+    "T20_historical_validator": {
+      "path": "build-deepseek-t20/full-core-attempt-1/cpu-validator-r2.py",
+      "sha256": "84eae602f05d1fb29c1bae2f61129c53ba81985a80acd3b9e2caeb7e33c44f7e"
+    },
+    "T20_branch": {
+      "path": "build-deepseek-t20/branch-core-attempt-1/verification.json",
+      "sha256": "63af4027f4040999c8c444131bf85565ea7b9d5bca3f9adfe4fe057160040e19"
+    },
+    "T25_helper": {
+      "path": "build-deepseek-t25/verification.json",
+      "sha256": "d8a1c81aefa058f8f09e0b98f22e84781286c44b29f728df4d02652991025157"
+    },
+    "T25_actual": {
+      "path": "build-deepseek-t25/actual/verification-final.json",
+      "sha256": "07ae343776d93ff6c072553409bfc0e10d3c0c7b5007c4e65b6167472169e108"
+    },
+    "header_inventory": {
+      "path": "Strata-extensions/tests/artifact/header-inventory.json",
+      "sha256": "08583c5cff84627962517db22ec877a69fd1aed3a811eb010d2f2f3e2f84366b"
+    },
+    "descriptor": {
+      "path": "Strata-extensions/control/deepseek41.contract.json",
+      "sha256": "7629b7b5dde77a43b1110a1a777324d3b141f4ef8d5e8540ca8e03ceef8f32c4"
+    },
+    "official_config": {
+      "path": "Strata-extensions/models/deepseek41/reference-config.json",
+      "sha256": "8be45ce0476004a3f529fd896115a4a2e800a129ad2d3ec05b16050f52e21879"
+    },
+    "layouts": {
+      "path": "Strata-extensions/native/artifact/quant_layouts.json",
+      "sha256": "92be7dfe162dbc4cad846332f65d7b365a41d5947609b93cc5fe6d82d3436c67"
+    },
+    "T25_restore": {
+      "path": "build-deepseek-t25/state-restore/verification-final.json",
+      "sha256": "9029ca46ca679e7fa79ab2b5193d7b82f4825ad61006530f26fe0c3e2fe3ece4"
+    }
+  },
+  "T25_coverage": {
+    "path": "build-deepseek-t25/coverage-evidence-v3.json",
+    "sha256": "d09726fb0c220b4419df239a293f53a30459cf3420d93009a5a796e3ccf8eb53"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "T35-block-scale-contract/v1",
+  "types": {"0": [1, 4], "8": [32, 34], "39": [32, 17], "43": [32, 33]},
+  "projection_shapes": [[17,5120,1,20],[7,2304,2,7],[3,5120,4,6],[17,2304,8,20],[256,2304,1,259]],
+  "block_boundaries": [32,64],
+  "decode_scale_coverage": {"8":"all 65536 F16 headers; signed byte cycles", "39":"all 256 scale headers and all 16 codes", "43":"all 256 scale headers and all 256 FP8 codes", "0":"signed zero, subnormal, finite, infinity, NaN controls"},
+  "schedule": "ABBA",
+  "warmup_each": 1,
+  "launches_per_arm": 5,
+  "clock": "same-device HIP event envelope includes dispatch/queue gaps; host launch wall separate",
+  "projection_initial_accumulator": "+0",
+  "projection_order": "full K ascending; FP32 product then FP32 addition; no FMA",
+  "projection_comparison": "old/new and finite independent Q exact bits; output padding unchanged",
+  "nonfinite_decode": "old/new exact bits; independent Q NaN classification and finite bits separately",
+  "new_activation_quantization": false,
+  "model_generation": false,
+  "original_model_read_bytes": 0,
+  "normal_profile_modified": false
+}

@@ -1,0 +1,95 @@
+{
+  "schema": "T35-eager-baseline/v1",
+  "scope": "primary normal producer, eager, DSpark off in this benchmark only",
+  "pre_revision": "pre-r4 + measurement-contract-pre-r4 user relaxed DRAM target",
+  "context": 4096,
+  "context_is_benchmark_selection_not_normal_default": true,
+  "messages": [
+    {
+      "role": "user",
+      "content": ""
+    }
+  ],
+  "thinking": false,
+  "sampling": {
+    "temperature": 0,
+    "seed": 0,
+    "top_k": 0,
+    "top_p": 1,
+    "min_p": 0,
+    "logprobs": false
+  },
+  "maximum_new_tokens": 2,
+  "fixture_maximum_is_normal_limit": false,
+  "cache_budget": {
+    "device_cache_payload_bytes": "auto",
+    "ram_cache_payload_bytes": "auto",
+    "auto_cache_fraction": 0.5,
+    "auto_row_fraction": 0.015625
+  },
+  "cache_conditions": {
+    "A": "new process, empty app owners, OS cache unknown",
+    "B": "same process, retained owners, new Core, no KV prefix reuse"
+  },
+  "pilot_pairs": 1,
+  "measurement_initial_pairs": 3,
+  "measurement_schedule": [
+    "AB",
+    "AB",
+    "AB"
+  ],
+  "clock": "controller perf_counter_ns at pipe-reader arrival; native generation instants unknown",
+  "TPOT": "null for N<2, coalesced first/last frame, same timestamp, or endpoints within clock resolution",
+  "unknown": [
+    "primary_received",
+    "physical_io",
+    "driver_event_private_bytes",
+    "physical_peak",
+    "other_control_h2d",
+    "other_control_d2h",
+    "kernel_time"
+  ],
+  "candidate_normal_bundle": "b3d7d28015b2b7b288a2fcf8919bebc2f36259f6d042bdeacd67ad49e4f822fa",
+  "raw_prompt_ids": [
+    0,
+    128803,
+    128804,
+    128822
+  ],
+  "measurement_sealed": false,
+  "normal_profile_changes": false,
+  "host_io_diagnostic": {
+    "schema": "T35-host-io/v1",
+    "schedule": [
+      "A",
+      "B",
+      "B",
+      "A"
+    ],
+    "bytes_per_arm": 2097152,
+    "chunk_A": 65536,
+    "chunk_B": 2097152,
+    "request_slots": 1,
+    "max_outstanding": 1,
+    "pre_and_post_bytes_each": 2097152,
+    "logical_read_maximum": 12582912,
+    "raw_saved": false,
+    "GPU": false,
+    "physical_io": null,
+    "model_performance_qualified": false
+  },
+  "formal_test_DRAM": {
+    "target_bytes": 8589934592,
+    "band_bytes": [
+      8589934592,
+      9663676416
+    ],
+    "aim_bytes": 9126805504,
+    "monitor_interval_seconds": 10,
+    "model_RAM_cache_only": true,
+    "normal_default_modified": false,
+    "valid_model_payload_bytes": null,
+    "maximum_candidate_constructions": 1,
+    "target_is_report_only": true
+  }
+}

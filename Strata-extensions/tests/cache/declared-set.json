@@ -1,0 +1,20 @@
+{
+  "schema": "t16-synthetic-declared-set/v2",
+  "scope": "Synthetic fixed slots; not T11 actual working set or T18 supply qualification",
+  "queue_jobs": 8,
+  "queue_bytes": 524288,
+  "max_chunk_bytes": 65536,
+  "demand_reserved_slots_per_pool": 1,
+  "source_slots": 2,
+  "staging_slots": 4,
+  "device_slots": 2,
+  "slot_capacity_bytes": 65536,
+  "device_scratch_bytes": 4096,
+  "host_expected_assertions": 135,
+  "hip_variant": {"source_slots":1,"source_bytes":65536,"readback_bytes":65536,"staging_slots":4,"staging_slot_bytes":65536,"device_slots":2,"device_slot_bytes":65536,"scratch_bytes":4096,"operations":16},
+  "completion_progress_assumption": "Issued synthetic completions arrive within finite declared steps; no unconditional hardware progress guarantee",
+  "identity": "Borrow caller T34 request_id/epoch/phase; no ID or ownership authority",
+  "owner_lifetime": "Caller retains buffers, stream/events and immutable Identity through every outstanding or quarantined lease; sidecar never frees owner buffers",
+  "call_synchronization": "Serialized owner coordinator or existing outer owner lock; class alone not thread-safe qualified; actual worker/consumer join is T17/T18",
+  "normal_runtime_changes": false
+}

@@ -1,0 +1,157 @@
+{
+  "schema": "strata-t14-kv-contract/v1",
+  "scope": "offline canonical operator/state preparation; fullsource/real layer attention/resident supply unqualified",
+  "source": {
+    "HF_revision": "1bae0e1088993b9b82de08f59de5be5a34e42170",
+    "model_sha256": "e5decd76fe70fd56ef2f10124d245c6f64fb6a0003cc9068a1d3182a168b8d2d",
+    "kernel_sha256": "1236c3507019ed176f5dba5e04bcea58867cf654818c6cf138ed4845398c2455",
+    "requirements_sha256": "be82bcd5775ccf8361ddd22cac53ef7b3b83434697fc3c61c75870450fb9437e",
+    "inference_config_sha256": "2e84f45cf1dac8c7fcbb200e96667d4b913275690668ed496f24c7747207a809",
+    "tilelang": "2d63708c8ad57196051c4636a1167c5453c73a48",
+    "cutlass": "b2dd65dc864e09688245b316ac46c4a6cd07e15c",
+    "float8_sha256": "6963b577695eecfb9c0ad1d56fed071b268c16cc247c08a356a7292f3d5ef268",
+    "FP4_element_spec": "https://www.opencompute.org/documents/ocp-microscaling-formats-mx-v1-0-spec-final-pdf"
+  },
+  "N": {
+    "fp4": [
+      {
+        "name": "zero",
+        "amax": "0",
+        "scale_code": 1
+      },
+      {
+        "name": "scale-tie-even-low",
+        "amax": "6.375",
+        "scale_code": 56
+      },
+      {
+        "name": "scale-tie-even-high",
+        "amax": "7.125",
+        "scale_code": 58
+      },
+      {
+        "name": "scale-satfinite",
+        "amax": "2880",
+        "scale_code": 126
+      }
+    ],
+    "element_values": [
+      "0",
+      "0.25",
+      "0.75",
+      "1.25",
+      "1.75",
+      "2.5",
+      "3.5",
+      "5",
+      "-0",
+      "-0.25"
+    ],
+    "element_codes": [
+      0,
+      0,
+      2,
+      2,
+      4,
+      4,
+      6,
+      6,
+      8,
+      8
+    ],
+    "rotation": [
+      {
+        "position": 0,
+        "cos_f32": "0000803f",
+        "sin_f32": "00000000",
+        "cos_bf16": "0000803f",
+        "sin_bf16": "00000000"
+      },
+      {
+        "position": 1,
+        "cos_f32": "40510a3f",
+        "sin_f32": "a46a573f",
+        "cos_bf16": "00000a3f",
+        "sin_bf16": "0000573f"
+      }
+    ],
+    "pool": [
+      {
+        "scores": [
+          "0",
+          "0"
+        ],
+        "weights": [
+          "0000003f",
+          "0000003f"
+        ],
+        "pool": "00000040",
+        "bf16": "00000040"
+      },
+      {
+        "scores": [
+          "1",
+          "-1"
+        ],
+        "weights": [
+          "ea7b613f",
+          "a920f43d"
+        ],
+        "pool": "15849e3f",
+        "bf16": "00009f3f"
+      },
+      {
+        "scores": [
+          "1000",
+          "-1000"
+        ],
+        "weights": [
+          "0000803f",
+          "00000000"
+        ],
+        "pool": "0000803f",
+        "bf16": "0000803f"
+      }
+    ],
+    "norm": [
+      {
+        "value": "0",
+        "inv": "f9021550",
+        "output": "00000000"
+      },
+      {
+        "value": "9.094947017729282379150390625E-13",
+        "inv": "65011550",
+        "output": "0000153c"
+      },
+      {
+        "value": "1",
+        "inv": "0000803f",
+        "output": "0000803f"
+      }
+    ]
+  },
+  "precision": {
+    "projection": "native Q8_0 exact independent decode + FP32 separate product/K ascending sum/+0/FMAoff",
+    "ratio2": "BF16 input->FP32 no activation QDQ; KV/gate FP32 projections; feature-wise token2 stable softmax;FP32 pooled sum->BF16->RMS512eps1e-20->BF16",
+    "ratio1": "no gate or activation QDQ; projection->BF16->RMS512->BF16",
+    "window": "FP8 block32 inputQDQ before nativeQ8 projection->BF16/norm512->tail64 adjacent RoPE copyBF16->whole512 FP8E4M3/UE8M0 block32 QDQ",
+    "compressed": "preRoPE latent to indexer then RoPE group first position->E2M1/block16/E4M3scale:amax floor6*2^-9;FP32division6;scale RNE/satfinite448;normalized clamp6;E2M1RNE;decode*scale->BF16",
+    "zero": "activation E2M1 preserves signedzero, distinct from GGUF39 +0 canonical",
+    "rope": "FP32 basepow/inverse/Yarn interpolation/position product/complex separate products-add; cos/sin target FP32; ratio0 theta10000/noYarn, others theta160000/original65536/factor16/beta32,1",
+    "comparison": "exp/rsqrt/freq/cos/sin local predeclared2ULP; Q canonical stage/code/scale/mask/position/finalBF16/cachebytes exact; no G-derived tolerances"
+  },
+  "state": {
+    "window": "prefill returns wholechunk rows with causalchunk indices; separately seed last128 physicalring; decodeidx physicalslot order",
+    "compressed": "physical published endpos//ratio rows distinct from perquery floor((p+1)/ratio); partial ratio2 validcount0/1, empty compressed output explicit at firsttoken",
+    "shared": "source2/8/14 ratio2/source20 ratio1; all40layer source publication/consumer mapping; indexsources2,8,14,20,24,28,32,36 preRoPE handoff, actual index/T15 pending",
+    "lifecycle": "epoch/reset/cancel/append/reuse test-owned state; caller-owned identity, no global registry"
+  },
+  "fixtures": {
+    "unique_inputs": 8,
+    "input_family": "first4A/last4Bholdout; batches1,2,4,8 select cyclic phase0/4; temporal127/128/129 use declared periodic8 projections; not129unique projection qualification",
+    "temporal": "B1 long127/128/129 phase0/4; B2/4/8 short3, reset/append partial/complete/cancel/reuse"
+  },
+  "completion": "T05 full9->T10 actualfull->T14 fullsource review",
+  "G_executed": false
+}

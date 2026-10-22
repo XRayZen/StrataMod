@@ -1,0 +1,46 @@
+{
+  "schema": "strata-t32-agent-contract/v1",
+  "family": "deepseek41",
+  "context_domain": {
+    "minimum": 1,
+    "maximum": 1048576
+  },
+  "SDK_levels": [
+    "off",
+    "minimal",
+    "low",
+    "medium",
+    "high",
+    "xhigh",
+    "max"
+  ],
+  "wire_efforts": [
+    "none",
+    "minimal",
+    "low",
+    "medium",
+    "high",
+    "xhigh",
+    "ultra",
+    "max"
+  ],
+  "SDK_wire_map": {
+    "off": "none",
+    "minimal": "minimal",
+    "low": "low",
+    "medium": "medium",
+    "high": "high",
+    "xhigh": "xhigh",
+    "max": "max"
+  },
+  "legacy_policy_unchanged": true,
+  "pure_helpers_do_not_qualify": [
+    "DATA/Pi/Harness hook integration",
+    "installed helper deployment",
+    "actual SDK requests",
+    "fresh process/owner or epoch verification",
+    "tool execute hooks",
+    "normal saved settings",
+    "T32 completion"
+  ]
+}

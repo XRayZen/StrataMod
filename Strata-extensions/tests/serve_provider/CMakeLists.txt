@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.24)
+project(deepseek_provider_tests LANGUAGES CXX)
+add_executable(t28-sampling test_sampling.cpp ../../models/deepseek41/sampling.cpp ../../native/protocol/generation.cpp)
+target_link_libraries(t28-sampling PRIVATE bcrypt)
+target_compile_features(t28-sampling PRIVATE cxx_std_17)

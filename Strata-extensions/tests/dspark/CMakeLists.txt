@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.20)
+project(t37_dspark_contract LANGUAGES CXX)
+add_executable(t37_dspark_contract contract_fixture.cpp ../../models/deepseek41/dspark_contract.cpp ../../native/artifact/native_reader.cpp)
+target_include_directories(t37_dspark_contract PRIVATE ../../models/deepseek41 ../../native/artifact ../../../include)
+target_compile_features(t37_dspark_contract PRIVATE cxx_std_17)
+set_property(TARGET t37_dspark_contract PROPERTY MSVC_RUNTIME_LIBRARY MultiThreaded)
+target_compile_options(t37_dspark_contract PRIVATE /W4 /EHsc /utf-8 /fp:strict)
+target_compile_definitions(t37_dspark_contract PRIVATE T37_SOURCE_SHA="${T37_SOURCE_SHA}")

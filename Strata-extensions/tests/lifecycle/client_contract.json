@@ -1,0 +1,15 @@
+{
+  "schema": "T33-client-lifecycle/v1",
+  "identity_fields": [
+    "schema",
+    "family",
+    "bundle_id",
+    "package_id",
+    "runtime_epoch",
+    "model",
+    "context"
+  ],
+  "normal_profiles_modified": false,
+  "browser_verification": "user_deferred",
+  "actual_reasoning_tool_qualified": false
+}

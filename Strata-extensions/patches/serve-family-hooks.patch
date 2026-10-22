@@ -1,0 +1,116 @@
+--- a/serve/server.py
++++ b/serve/server.py
+@@ -54,7 +54,9 @@
+ from typing import Iterator, Protocol
+ from urllib.parse import parse_qs, urlsplit
+ 
+-ROOT = Path(__file__).resolve().parents[1]
++ROOT = Path(os.environ.get("STRATA_FAMILY_SOURCE_ROOT", Path(__file__).resolve().parents[1]))
++FAMILY_TOKENIZER_FACTORY = None
++FAMILY_INFO_PARSER = None
+ sys.path.insert(0, str(ROOT / "tools"))
+ sys.path.insert(0, str(ROOT))   # run as a script (run-<model>.bat) as well as a module
+ from serve.frontend import (THINK_END, ChatTemplate, Event, OutputParser, anthropic_to_messages,  # noqa: E402
+@@ -860,6 +862,9 @@
+             if line is None:
+                 break
+             if line.startswith("INFO "):
++                if FAMILY_INFO_PARSER is not None:
++                    self.info.update(FAMILY_INFO_PARSER(line[5:]))
++                    continue
+                 for kv in line.split()[1:]:
+                     k, _, v = kv.partition("=")
+                     self.info[k] = int(v) if v.lstrip("-").isdigit() else v
+@@ -4818,10 +4823,10 @@
+             break
+         messages.append({"role": "assistant", "content": "".join(text).strip(),
+                          **({"reasoning_content": "".join(reasoning).strip()} if reasoning else {}),
+-                         "tool_calls": [{"function": {"name": c.name, "arguments": c.arguments}} for c in calls]})
+-        messages += [{"role": "tool", "content": r} for r in results]
++                         "tool_calls": [{**({"id": c.id, "type": "function"} if getattr(svc, "family", None) == "deepseek41" else {}), "function": {"name": c.name, "arguments": json.dumps(c.arguments, ensure_ascii=False) if getattr(svc, "family", None) == "deepseek41" else c.arguments}} for c in calls]})
++        messages += [{"role": "tool", "content": r, **({"tool_call_id": calls[i].id} if getattr(svc, "family", None) == "deepseek41" else {})} for i, r in enumerate(results)]
+         try:
+-            ids, thinking, max_new = svc.prepare(messages, tools, kw, max_req, cancel=cancel)
++            ids, thinking, max_new = svc.prepare(messages, tools, kw, max_req, req=sampling if getattr(svc, "family", None) == "deepseek41" else None, cancel=cancel)
+         except ClientGone:                                      # #1999: the client left while a picture was prepared
+             done = {**done, "finish": "cancel"}
+             break
+@@ -4879,6 +4884,10 @@
+             # now it carries the progress when the client asked, and stays the comment when there is nothing to report.
+             pp = prompt_progress(svc) if want_progress else None
+             yield None if pp is None else {**chunk({}), "prompt_progress": pp}
++        elif kind == "logprobs":
++            c = chunk({})
++            c["choices"][0]["logprobs"] = x
++            yield c
+         elif kind == "mcp":
+             c = chunk({})
+             c["strata_mcp"] = x
+@@ -4928,11 +4937,14 @@
+ 
+ def openai_collect(chunks) -> dict:
+     content, reasoning, by_index, last, mcp = [], [], {}, None, []
++    token_logprobs = []
+     for c in chunks:
+         if c is None:                              # a heartbeat
+             continue
+         if c.get("strata_mcp"):
+             mcp.append(c["strata_mcp"])
++        lp = c["choices"][0].get("logprobs")
++        if lp and lp.get("content"): token_logprobs.extend(lp["content"])
+         d = c["choices"][0]["delta"]
+         content.append(d.get("content") or "")
+         reasoning.append(d.get("reasoning_content") or "")
+@@ -4957,6 +4969,7 @@
+     out = {"id": last["id"], "object": "chat.completion", "created": last["created"], "model": last["model"],
+            "choices": [{"index": 0, "message": msg, "finish_reason": last["choices"][0]["finish_reason"]}],
+            "usage": last["usage"]}
++    if token_logprobs: out["choices"][0]["logprobs"] = {"content": token_logprobs}
+     if last.get("timings"):
+         out["timings"] = last["timings"]
+     return out
+@@ -6860,19 +6873,23 @@
+         ap.error(listen_problem(a.host, a.port, e))
+     if cfg.get("tokenizer"):
+         a.tokenizer = cfg["tokenizer"]
+-    tok = ByteTokenizer()
+     tpath = Path(a.tokenizer)
+-    if a.engine == "strata" and not (tpath / "vocab.json").exists():
+-        ap.error(f"the model's tokenizer is missing ({tpath / 'vocab.json'}); run setup again")
+-    if (tpath / "vocab.json").exists():
+-        import strata_tokenizer as ST
+-        vocab = json.loads((tpath / "vocab.json").read_text(encoding="utf-8"))
+-        tokens = [None] * len(vocab)
+-        for t, i in vocab.items():
+-            tokens[i] = t
+-        merges = (tpath / "merges.txt").read_text(encoding="utf-8").split("\n")
+-        types = json.loads((tpath / "token_type.json").read_text())
+-        tok = ST.Tokenizer(tokens, merges, types)
++    if FAMILY_TOKENIZER_FACTORY is not None:
++        tok = FAMILY_TOKENIZER_FACTORY(a.tokenizer)
++    else:
++        tok = ByteTokenizer()
++        tpath = Path(a.tokenizer)
++        if a.engine == "strata" and not (tpath / "vocab.json").exists():
++            ap.error(f"the model's tokenizer is missing ({tpath / 'vocab.json'}); run setup again")
++        if (tpath / "vocab.json").exists():
++            import strata_tokenizer as ST
++            vocab = json.loads((tpath / "vocab.json").read_text(encoding="utf-8"))
++            tokens = [None] * len(vocab)
++            for t, i in vocab.items():
++                tokens[i] = t
++            merges = (tpath / "merges.txt").read_text(encoding="utf-8").split("\n")
++            types = json.loads((tpath / "token_type.json").read_text())
++            tok = ST.Tokenizer(tokens, merges, types)
+     hub = hub_from_config(cfg, a.mcp_config)            # before the minutes of loading: a bad entry stops here
+     if a.engine == "strata":
+         if not cfg:
+@@ -6949,7 +6966,7 @@
+                   sampling_defaults=sampling_defaults,
+                   fit_max_tokens=a.fit_max_tokens or cfg.get("fit_max_tokens") is True)
+     if a.engine == "strata":                            # the model card's sampling when nothing else is said (see MODEL_CARD_SAMPLING)
+-        svc.model_arch = cfg.get("arch") or "qwen4exp"
++        svc.model_arch = cfg.get("arch") or ("deepseek41" if FAMILY_TOKENIZER_FACTORY is not None else "qwen4exp")
+     svc.answer_room = cfg.get("answer_room") is not False
+     svc.reasoning_close_retry = cfg.get("reasoning_close_retry") is True    # #1053: opt-in, off by default
+     if cfg.get("images"):                               # image generation (serve/images.py), set up by setup --images

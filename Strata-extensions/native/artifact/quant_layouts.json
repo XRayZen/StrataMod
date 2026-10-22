@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "source": "https://raw.githubusercontent.com/mw00/project-maya/8d9a9b5d705049a87da853717cdc59440252de30/tools/ds4/pack_gguf.py",
+  "source_sha256": "c462cc38feb30a13595a815d87866ed648c248e733d29a9a8982d42fc219f974",
+  "source_lines": "35-37",
+  "derivation": "Numeric format facts independently expressed; no third-party implementation copied. Full per-block interpretation remains to be verified against real fixture and source. Different MXFP8 IDs retain distinct layout names.",
+  "types": {
+    "0": {
+      "name": "F32",
+      "block_values": 1,
+      "block_bytes": 4,
+      "storage": "little-endian IEEE754 float32"
+    },
+    "1": {
+      "name": "F16",
+      "block_values": 1,
+      "block_bytes": 2,
+      "storage": "little-endian IEEE754 float16"
+    },
+    "8": {
+      "name": "Q8_0",
+      "block_values": 32,
+      "block_bytes": 34,
+      "scale": "first 2 bytes little-endian FP16",
+      "codes": "next32 int8, contiguous 32 values"
+    },
+    "30": {
+      "name": "BF16",
+      "block_values": 1,
+      "block_bytes": 2,
+      "storage": "little-endian BF16"
+    },
+    "39": {
+      "name": "MXFP4",
+      "block_values": 32,
+      "block_bytes": 17,
+      "scale": "first byte E8M0 interpreted 2^(e-128) times doubled-E2M1 LUT convention",
+      "codes": "next16 packed bytes: values0..15 low nibbles, values16..31 high nibbles",
+      "doubled_e2m1_lut": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        6,
+        8,
+        12,
+        0,
+        -1,
+        -2,
+        -3,
+        -4,
+        -6,
+        -8,
+        -12
+      ]
+    },
+    "43": {
+      "name": "MXFP8-llamacpp",
+      "block_values": 32,
+      "block_bytes": 33,
+      "scale": "first byte E8M0 2^(e-127)",
+      "codes": "next32 E4M3FN bytes; 32values/block; 8blocks/256value Engram row"
+    },
+    "67": {
+      "name": "MXFP8-unsloth-legacy",
+      "block_values": 32,
+      "block_bytes": 33,
+      "scale": "legacy Unsloth ID, same referenced 33byte storage; not observed in target headers",
+      "codes": "compatibility requires source/layout identity; not accepted by numeric ID alone"
+    }
+  },
+  "block_interpretation_reference": {
+    "url": "https://raw.githubusercontent.com/mw00/project-maya/8d9a9b5d705049a87da853717cdc59440252de30/tools/ds4/ref_gguf.py",
+    "sha256": "5f7ccb3e6b4de7f008d62d19e2a7d3946a9ca618685c98bbf8bb85a9a9efab78",
+    "lines": "29-30,75-87",
+    "license": "MIT; numerical format facts, no implementation code copied"
+  }
+}
