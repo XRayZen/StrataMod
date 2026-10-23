@@ -5,9 +5,9 @@ This fork starts from official Strata v0.1.45, commit
 branch. Small contributions to upstream should start from the current upstream
 `main`, with only the required changes and their dependencies.
 
-The integration candidate includes official **v0.2.0-beta**, peeled commit
-`3d1fb48090e8f2cefc22d7b5845fb7f5b71f33fa` (engine **0.1.45.3**).
-Official v0.2.0-beta is integrated; machine-specific deployment and validation status is recorded separately.
+The integration candidate includes official **v0.2.3**, peeled commit
+`5c8dd322528cc84f68f461ad54a506b9da8fa8d4` (engine **0.1.48**).
+Official v0.2.3 is integrated; machine-specific deployment and validation status is recorded separately.
 
 ## Changes kept here
 
@@ -113,3 +113,18 @@ separate. Before a contribution, test the extracted exact revision and build
 every affected backend as required by [AGENTS.md](../AGENTS.md). State which
 builds, GPU operations and failure paths were actually tested. Local CPU
 fixtures and adapter compilation are not a new image-generation measurement.
+
+## v0.2.3 integration validation
+
+The release merge retains encoder ownership until exit is proved, preserves the
+private HIP token cap, and aborts tool-image requests when reader cleanup is
+pending. Official reader token defaults and elastic startup remain available.
+Synthetic CPU regression tests cover those boundaries and image ordering.
+
+A local Windows R9700 installation answered a short prompt, one request with
+four images, and a follow-up using that image history with engine 0.1.48. That
+installation includes an unpublished plain launcher and RAM selection changes;
+it is not a GPU validation of this published tree or its receipt-based adapter.
+Image detail accuracy, full-context input and long-running stability were not
+measured. Product CUDA/HIP/SYCL rebuilds and GPU execution of this published
+candidate have not been performed.
