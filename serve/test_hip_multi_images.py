@@ -72,6 +72,23 @@ class HipMulti(unittest.TestCase):
         self.assertFalse(list(self.vision.dir.glob('*.img')))
         self.assertFalse(list(self.vision.dir.glob('req-*.sve')))
 
+    def test_tool_cleanup_pending_is_fatal_before_later_images(self):
+        for stage in ('startup', 'encode'):
+            with self.subTest(stage=stage):
+                messages = self.messages(['2', '3'], role='tool')
+                self.vision.error = 'synthetic owner remains'
+                error = s.VisionCleanupPending(self.vision)
+                target = self.service if stage == 'startup' else self.vision
+                method = '_vision_up' if stage == 'startup' else 'encode'
+                self.commands.clear()
+                with patch.object(target, method, side_effect=error) as operation:
+                    with self.assertRaises(s.VisionCleanupPending):
+                        self.prepare(messages)
+                self.assertEqual(operation.call_count, 1)
+                self.assertEqual(self.commands, [])
+                self.assertTrue(all(item['type'] == 'image' for item in messages[0]['content']))
+                self.assertIsNone(getattr(self.service.embeddings, 'path', None))
+
     def test_ordinary_tool_source_failure_stays_note_and_other_image_survives(self):
         messages=self.messages(['bad','2'],role='tool')
         self.prepare(messages)

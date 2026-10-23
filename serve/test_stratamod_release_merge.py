@@ -36,6 +36,25 @@ class ReleaseOwnership(unittest.TestCase):
         svc = s.Service(engine, tok, ChatTemplate(s.ROOT / 'serve/chat_template.jinja'), vision=v)
         return svc
 
+    def test_private_hip_default_cap_matches_reader_argument(self):
+        with tempfile.TemporaryDirectory() as directory:
+            v = s.Vision(dict(exe='gpu-reader', backend='hip', gpu=True,
+                              mmproj='projection', model='text', temp_dir=directory), lazy=True)
+            self.addCleanup(v.shutdown)
+            self.assertEqual(v.max_tokens, 300)
+            args = v.spawn[0]
+            self.assertEqual(args[args.index('--max-tokens') + 1], '300')
+
+    def test_official_default_cap_matches_reader_argument(self):
+        for gpu, expected in ((True, 1024), (False, 300)):
+            with self.subTest(gpu=gpu), tempfile.TemporaryDirectory() as directory:
+                v = s.Vision(dict(exe='reader', reader_mode='official-bundle', gpu=gpu,
+                                  mmproj='projection', model='text', temp_dir=directory), lazy=True)
+                self.addCleanup(v.shutdown)
+                self.assertEqual(v.max_tokens, expected)
+                args = v.spawn[0]
+                self.assertEqual(args[args.index('--max-tokens') + 1], str(expected))
+
     def test_existing_owner_exit_failure_prevents_replacement_spawn(self):
         with tempfile.TemporaryDirectory() as d:
             v = self.vision(Path(d)); original = v.proc
