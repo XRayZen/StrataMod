@@ -221,7 +221,7 @@ class Session:
             self.rate()
 
 
-def run(cfg: dict, say=print, start_engine=None, *, progress=None, cancel_event=None) -> dict:
+def run(cfg: dict, say=print, start_engine=None, close_engine=None, *, progress=None, cancel_event=None) -> dict:
     """Measure on the engine `cfg` describes; returns {"settings": {flag: value}, "report": {...}}.
     `start_engine(args)` returns a started engine (serve.server.StrataEngine or a stand-in in tests)."""
     if start_engine is None:
@@ -240,11 +240,12 @@ def run(cfg: dict, say=print, start_engine=None, *, progress=None, cancel_event=
     tok = ST.Tokenizer(toks, (tpath / "merges.txt").read_text(encoding="utf-8").split("\n"),
                        json.loads((tpath / "token_type.json").read_text()))
     ids_list = [chat_ids(tok, p) for p in PROMPTS]
-    if progress is None and cancel_event is None:
-        return measure(engine_args(cfg), ids_list, start_engine, say, host_worker_extras(), doc_prompt(tok),
-                       hip=cfg.get("backend") == "hip")
-    return measure(engine_args(cfg), ids_list, start_engine, say, host_worker_extras(), doc_prompt(tok),
-                   hip=cfg.get("backend") == "hip", progress=progress, cancel_event=cancel_event)
+    options = {"hip": cfg.get("backend") == "hip"}
+    if close_engine is not None:
+        options["close_engine"] = close_engine
+    if progress is not None or cancel_event is not None:
+        options.update(progress=progress, cancel_event=cancel_event)
+    return measure(engine_args(cfg), ids_list, start_engine, say, host_worker_extras(), doc_prompt(tok), **options)
 
 
 def engine_args(cfg: dict) -> list[str]:
@@ -301,7 +302,8 @@ def sweep(s, values: list, base_tune: dict, key: str, label: str, say,
 
 
 def measure(base_args: list[str], ids_list, start_engine, say=print, extra_workers=(), long_prompt=None, hip: bool = False,
-            *, progress=None, cancel_event=None) -> dict:
+            close_engine=None, *, progress=None, cancel_event=None) -> dict:
+    finish = close if close_engine is None else close_engine
     t0 = time.time()
     report: dict = {}
     _check_cancel(cancel_event)
@@ -353,7 +355,7 @@ def measure(base_args: list[str], ids_list, start_engine, say=print, extra_worke
                       min_p_sweep={str(k): v for k, v in by_minp.items()},
                       confirm={f"{k[0]}/{k[1]}": v for k, v in confirm.items()})
     finally:
-        close(eng)
+        finish(eng)
     settings = {}
     if pipe:
         settings["--prefill-pipe"] = str(int(pipe))
@@ -381,7 +383,7 @@ def measure(base_args: list[str], ids_list, start_engine, say=print, extra_worke
                 by_workers[w] = [sw.rate(), sw.rate()]
                 say(f"    {w} workers: {statistics.median(by_workers[w]):.1f} tok/s")
             finally:
-                close(e)
+                finish(e)
             _progress(progress, "cpu_workers", index, len(workers))
         report["workers"] = {str(k): v for k, v in by_workers.items()}
         w_best = pick(by_workers, d_workers) if by_workers else d_workers
@@ -413,7 +415,7 @@ def measure(base_args: list[str], ids_list, start_engine, say=print, extra_worke
             by_adapt[key] = [sa.rate(max_new=TIER_MAX_NEW), sa.rate(max_new=TIER_MAX_NEW)]
             say(f"    {statistics.median(by_adapt[key]):.1f} tok/s")
         finally:
-            close(e)
+            finish(e)
         _progress(progress, "expert_tier", index, len(ADAPT_CANDIDATES))
     a_best = pick(by_adapt, "default") if by_adapt else "default"
     report["adapt"] = by_adapt
@@ -442,7 +444,7 @@ def measure(base_args: list[str], ids_list, start_engine, say=print, extra_worke
                 by_fork[v] = [sf.rate(), sf.rate()]
                 say(f"    {statistics.median(by_fork[v]):.1f} tok/s")
             finally:
-                close(e)
+                finish(e)
         report["sh_stream"] = by_fork
         if pick(by_fork, "0") == "1":
             env[SH_STREAM] = "1"

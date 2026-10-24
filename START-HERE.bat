@@ -6,6 +6,7 @@ rem Python reads and writes text as UTF-8, not in the Windows code page (cp1251,
 set "PYTHONUTF8=1"
 title Strata
 cd /d "%~dp0"
+if /i "%~1"=="--calibrate" goto private_calibrate
 rem A bundled Python runtime (the python\ folder of the terminal archive) is used when it is there: nothing to find,
 rem install or download. SETUP.bat and UPDATE.bat run this file, so they use it too.
 if exist "python\python.exe" goto bundled
@@ -63,3 +64,13 @@ python -c "import sys; sys.exit(0 if sys.version_info >= (3, 10) and sys.maxsize
 if not errorlevel 1 set "PY=python" & goto :eof
 for %%V in (313 312 311 310) do if exist "%LOCALAPPDATA%\Programs\Python\Python%%V\python.exe" set "PY="%LOCALAPPDATA%\Programs\Python\Python%%V\python.exe"" & goto :eof
 goto :eof
+
+:private_calibrate
+rem Approved private calibration only: never install, move data, update or auto-start.
+set "CAL_PY=%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
+if not exist "%CAL_PY%" exit /b 1
+if not exist "%~dp0..\Strata\.venv\Scripts\python.exe" exit /b 1
+set "__PYVENV_LAUNCHER__=%~dp0..\Strata\.venv\Scripts\python.exe"
+set "PYTHONDONTWRITEBYTECODE=1"
+"%CAL_PY%" -B -X utf8 -m local_runtime.calibrate_official %*
+exit /b %errorlevel%

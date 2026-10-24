@@ -40,6 +40,7 @@ class Busy(unittest.TestCase):
         proc = SimpleNamespace(stdin=io.StringIO(), stdout=io.StringIO(line), kill=lambda: None, wait=lambda timeout=None: 0,
                                poll=lambda: None)
         v = server.Vision.__new__(server.Vision)
+        v.proc = None
         v.spawn = (["strata-vision"], None, None)
         v.dir = Path(tempfile.gettempdir())
         with mock.patch.object(server, "popen", lambda *a, **k: proc):

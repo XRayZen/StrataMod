@@ -54,7 +54,7 @@ class Lifeline(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix="strata-lifeline-")
         self.addCleanup(self.temp.cleanup)
         self.env = {**os.environ, "LOCALAPPDATA": self.temp.name, "XDG_STATE_HOME": self.temp.name,
-                    "PYTHONPATH": str(ROOT)}
+                    "PYTHONPATH": os.pathsep.join(filter(None, (str(ROOT), os.environ.get("PYTHONPATH"))))}
         self.script = Path(self.temp.name) / "server.py"
         self.script.write_text(SERVER.format(root=str(ROOT)), encoding="utf-8")
         self.spawned = []
