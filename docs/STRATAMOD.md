@@ -13,6 +13,8 @@ Official v0.2.4 is integrated; machine-specific deployment and validation status
 
 - An opt-in Windows HIP image encoder, its environment isolation, device and
   loaded-module diagnostics, and CPU/CUDA/HIP/SYCL build compatibility.
+- Windows AMD telemetry for the WebUI Monitor (GPU load, VRAM and temperature
+  from DXGI, PDH and ADL); power and the PCIe link stay unavailable there.
 - Python image-process ownership, cleanup and input validation. Multiple images
   and image history use the existing ordered SVE records and mRoPE path; the
   temporary HIP-only one-image rejection is removed.

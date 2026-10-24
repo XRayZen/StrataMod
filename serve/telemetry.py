@@ -348,9 +348,16 @@ class _Metal:
 def gpu_reader(index=0, amd=False):
     """The card's readings: NVML (NVIDIA), the amdgpu sysfs files with the AMD backend (#301), or IOKit's
     IOAccelerator registry on macOS (Metal backend).  `amd` comes first: no Mac runs the HIP backend, and the
-    tests' AMD trees are read on a Mac too."""
+    tests' AMD trees are read on a Mac too.  On Windows the sysfs files are absent, so an AMD card falls back to
+    StrataMod's Windows reader (serve/stratamod/amd_telemetry.py): DXGI, PDH and ADL."""
     if amd:
-        return _Amd(index)
+        reader = _Amd(index)
+        if reader.ok():
+            return reader
+        if os.name == "nt":
+            from serve.stratamod.amd_telemetry import AmdWindowsGpu
+            return AmdWindowsGpu(index)
+        return reader
     return _Metal(index) if sys.platform == "darwin" else _Nvml(index)
 
 
@@ -411,15 +418,29 @@ def windows_amd_cards(adapters=None) -> list:
     return [c for c in cards if (c["vram_bytes"] or 0) >= 2 << 30] or cards
 
 
+def _close_reader(reader):
+    """Best-effort close of a one-shot reader: the Windows AMD reader owns a PDH query."""
+    close = getattr(reader, "close", None)
+    if callable(close):
+        try:
+            close()
+        except Exception:  # noqa: BLE001 - a reader's close must not hide the reading
+            pass
+
+
 def free_vram_mib(index=0, amd=False):
-    """Free VRAM of a card in MiB, or None when it cannot be read."""
+    """Free VRAM of a card in MiB, or None when it cannot be read.  A one-shot reader is closed here: the Windows
+    AMD reader opens a PDH query in its constructor, and Service.free_vram_mib can call this in a wait loop."""
     g = gpu_reader(index, amd)
-    if not g.ok():
-        return None
-    r = g.read()
-    if r.get("mem_total") is None or r.get("mem_used") is None:
-        return None
-    return int((r["mem_total"] - r["mem_used"]) >> 20)
+    try:
+        if not g.ok():
+            return None
+        r = g.read()
+        if r.get("mem_total") is None or r.get("mem_used") is None:
+            return None
+        return int((r["mem_total"] - r["mem_used"]) >> 20)
+    finally:
+        _close_reader(g)
 
 
 # ------------------------------------------------------------------------------------------------ CPU / RAM
@@ -552,26 +573,38 @@ class Telemetry:
         gpu_name = " + ".join(g.name() or "?" for _, g in self.gpus) if self.gpu.ok() else None
         win_amd = None
         if gpu_name is None and amd and os.name == "nt":
-            # #1587: no readings for an AMD card on Windows yet, but its name (and VRAM size) are in the registry, so the
+            # #1587: when no reader can open the card, its name (and VRAM size) are still in the registry, so the
             # dashboard and strata_bench do not call the run "CPU only".  The class order is taken as HIP's order.
             cards = windows_amd_cards()
             win_amd = [cards[i] for i in idx if 0 <= i < len(cards)] or cards[:1]
             gpu_name = " + ".join(c["name"] for c in win_amd) if win_amd else None
-        # the macOS reader knows the device's working set (the VRAM budget of the unified memory); None elsewhere
+        # the macOS reader knows the device's working set (the VRAM budget of the unified memory); the Windows AMD
+        # reader knows the card's dedicated VRAM (DXGI, else the registry); None elsewhere
         vram_total = None
         if win_amd is None and isinstance(self.gpu, _Metal) and self.gpu.ok():
             ws = metal_working_set()
             vram_total = ws >> 20 if ws else None
+        elif win_amd is None and amd and os.name == "nt" and self.gpu.ok():
+            totals = []
+            for _, g in self.gpus:
+                total = getattr(g, "vram_total", None)
+                try:
+                    totals.append(total() if callable(total) else None)
+                except Exception:  # noqa: BLE001 - a reader must not stop Telemetry.__init__
+                    totals.append(None)
+            vram_total = sum(totals) >> 20 if totals and all(totals) else None
+        gpu_missing = getattr(self.gpu, "gpu_missing", ()) if self.gpu.ok() else ()
         self.static = {
             "gpu_name": gpu_name,
             "gpu_vram_total_mib": (sum(c["vram_bytes"] for c in win_amd) >> 20
                                    if win_amd and all(c["vram_bytes"] for c in win_amd) else vram_total),
             "gpu_count": len(self.gpus),
-            # #1380: the AMD readings are the amdgpu driver's Linux sysfs files; a Windows AMD card has none yet, and the
-            # dashboard said "not readable (NVML)" or showed empty tiles with no word why
+            # #1380: only a Windows AMD card with no usable reader says this; a live reader suppresses the note
             "gpu_note": ("no GPU load or VRAM readings for AMD cards on Windows yet (Linux reads them from the amdgpu "
                          "driver); the engine's own VRAM figures are in its log" if amd and not self.gpu.ok()
                          else getattr(self.gpu, "note", None)),
+            # StrataMod: Windows AMD has no power or PCIe-link counter; the Monitor says so instead of an empty tile
+            "gpu_missing": list(gpu_missing) if isinstance(gpu_missing, (list, tuple)) else [],
             "cpu_name": _cpu_name(),
             "cores": (self.ps.cpu_count(logical=False) if self.ps else None) or None,
             "threads": os.cpu_count(),

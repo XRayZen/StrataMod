@@ -3541,20 +3541,24 @@ def igpu_cards(indices: list[int], archs: dict[int, str] | None) -> set[int]:
 
 
 def gpu_vram_mib(indices: list[int], hip: bool = False) -> dict[int, int] | None:
-    """Total VRAM of each card in MiB (NVML / amdgpu sysfs); None when any of them cannot be read."""
+    """Total VRAM of each card in MiB (NVML / amdgpu sysfs); None when any of them cannot be read.  Each one-shot
+    reader is closed: a Windows AMD reader owns a PDH query."""
     try:
-        from serve.telemetry import gpu_reader
+        from serve.telemetry import gpu_reader, _close_reader
     except ImportError:
         return None
     out = {}
     for i in indices:
         g = gpu_reader(i, amd=hip)
-        if not g.ok():
-            return None
-        total = g.read().get("mem_total")
-        if total is None:
-            return None
-        out[i] = int(total) >> 20
+        try:
+            if not g.ok():
+                return None
+            total = g.read().get("mem_total")
+            if total is None:
+                return None
+            out[i] = int(total) >> 20
+        finally:
+            _close_reader(g)
     return out
 
 
@@ -4470,16 +4474,12 @@ class Service:
 
     def free_vram_mib(self) -> int | None:
         """Free VRAM on the engine's (first) GPU, from the backend's reader - NVML, the amdgpu sysfs files (#301) or
-        IOKit on macOS (Metal backend); None when it can't be read (then nothing is refused)."""
+        IOKit on macOS (Metal backend); None when it can't be read (then nothing is refused).  telemetry.free_vram_mib
+        closes the one-shot reader (a Windows AMD reader owns a PDH query)."""
         try:
-            from serve.telemetry import gpu_reader
-            g = gpu_reader(int(getattr(self, "gpu_index", 0) or 0), amd=getattr(self, "backend", None) == "hip")
-            if not g.ok():
-                return None
-            r = g.read()
-            if r.get("mem_total") is None or r.get("mem_used") is None:
-                return None
-            return int((r["mem_total"] - r["mem_used"]) >> 20)
+            from serve.telemetry import free_vram_mib
+            return free_vram_mib(int(getattr(self, "gpu_index", 0) or 0),
+                                 amd=getattr(self, "backend", None) == "hip")
         except Exception:
             return None
 
