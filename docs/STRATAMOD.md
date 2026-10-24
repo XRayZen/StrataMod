@@ -5,9 +5,9 @@ This fork starts from official Strata v0.1.45, commit
 branch. Small contributions to upstream should start from the current upstream
 `main`, with only the required changes and their dependencies.
 
-The integration candidate includes official **v0.2.3**, peeled commit
-`5c8dd322528cc84f68f461ad54a506b9da8fa8d4` (engine **0.1.48**).
-Official v0.2.3 is integrated; machine-specific deployment and validation status is recorded separately.
+The integration candidate includes official **v0.2.4**, peeled commit
+`96ca4383c7b05a8a3e6064c65d9e9977d4b3bb59` (Qwen engine **0.1.48**).
+Official v0.2.4 is integrated; machine-specific deployment and validation status is recorded separately.
 
 ## Changes kept here
 
@@ -130,3 +130,16 @@ it is not a GPU validation of this published tree or its receipt-based adapter.
 Image detail accuracy, full-context input and long-running stability were not
 measured. Product CUDA/HIP/SYCL rebuilds and GPU execution of this published
 candidate have not been performed.
+
+## v0.2.4 integration
+
+This merge includes the official separate DeepSeek family, DSML handling and
+engine-selection support. It does not install a DeepSeek model or engine into
+the existing local Qwen installation. The Qwen engine bundle stays 0.1.48.
+Mod image preparation events and cleanup checks remain beside the official
+DeepSeek shared-prefix selection; Qwen requests keep their existing behavior.
+
+Validation of this published tree uses synthetic CPU tests. Product backend
+rebuilds and DeepSeek hardware execution are not performed. The local plain
+installation has unpublished adapter changes, so its separate GPU verification
+is not a GPU certification of this public receipt-based adapter.

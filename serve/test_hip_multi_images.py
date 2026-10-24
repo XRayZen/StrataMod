@@ -64,6 +64,17 @@ class HipMulti(unittest.TestCase):
         self.service.drop_embeddings()
         self.assertFalse(list(self.vision.dir.glob('req-*.sve')))
 
+    def test_qwen_images_keep_prepared_event_without_deepseek_prefix(self):
+        req = {}
+        self.addCleanup(self.service.drop_embeddings)
+        with patch.object(s.HipImageRequest, 'emit') as emit:
+            self.prepare(self.messages(['2', '3', '4', '2']), req=req)
+        prepared = [call for call in emit.call_args_list if call.args[0] == 'prepared']
+        self.assertEqual(len(prepared), 1)
+        self.assertEqual(len(prepared[0].kwargs['images']), 4)
+        self.assertEqual(req, {})
+        self.assertEqual(len(self.commands), 3)
+
     def test_tool_prepass_fatal_second_encoder_failure_is_not_a_note(self):
         self.bad_at=2;messages=self.messages(['2','3','4'],role='tool')
         with self.assertRaises(s.ImageRequestFatal):self.prepare(messages)
