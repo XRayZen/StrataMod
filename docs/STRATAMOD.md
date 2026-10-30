@@ -5,9 +5,9 @@ This fork starts from official Strata v0.1.45, commit
 branch. Small contributions to upstream should start from the current upstream
 `main`, with only the required changes and their dependencies.
 
-The integration candidate includes official **v0.2.7**, peeled commit
-`5e8a4cca7d690ac60ca37eb09e7d0e010099ad6d` (Qwen engine **0.1.52**).
-Official v0.2.7 is integrated; machine-specific deployment and validation status is recorded separately.
+The integration candidate includes official **v0.2.8**, peeled commit
+`870aedd9e1ebe1c91f94da93b59af17729f6c5c0` (Qwen engine **0.1.54**).
+Official v0.2.8 is integrated; machine-specific deployment and validation status is recorded separately.
 
 ## Changes kept here
 
