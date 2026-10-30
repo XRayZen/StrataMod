@@ -117,3 +117,9 @@ node_modules/
 # Private, receipt-bound runtime bundles and finite trial records.
 /local_runtime/runtimes/
 /local_runtime/release-trials/
+
+# DGX Spark build outputs and local venv (docs/DGX_SPARK_LINUX.md)
+/out-spark/
+/build-spark/
+/build-vision-spark/
+/.venv-build/
