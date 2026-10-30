@@ -70,6 +70,31 @@ build-vision-cuda12.bat
 # local Windows HIP packaging output
 dist-hip/
 
+# StrataMod isolated evaluation and vision SDK/build products
+/.vision-venv-*/
+/.vision-sycl-venv/
+/.vision-build/
+/.vision-pip-cache/
+/.vision-src/
+/.vision-tmp/
+/.vision-toolchain/
+/local_runtime/records/*
+/local_runtime/runs/
+/local_runtime/profiles/*.json
+
+# Private machine authorities, runtime output and historical work journals.
+/local_runtime/normal/
+/local_runtime/calibration-runs/
+/local_runtime/calibration-selected.json
+/installed.json
+/memory-*.jsonl
+/tmp*/
+/strata-vision-*/
+/docs/.qa/
+/docs/Plan/
+/docs/Inprogress/
+/docs/CURRENT.md
+/docs/StrataMod-summary.html
 # Terminal / Desktop split: local venvs, build output and archives never enter git
 .terminal-venv/
 .terminal-test-venv/
@@ -89,6 +114,9 @@ node_modules/
 # screenshots and checkpoints from the Mac rebuild live outside git (StrataSplit\evidence-archive)
 /apps/host/docs/evidence/
 /apps/host/docs/checkpoints/
+# Private, receipt-bound runtime bundles and finite trial records.
+/local_runtime/runtimes/
+/local_runtime/release-trials/
 
 # DGX Spark build outputs and local venv (docs/DGX_SPARK_LINUX.md)
 /out-spark/

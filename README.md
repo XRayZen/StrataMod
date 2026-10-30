@@ -1,3 +1,6 @@
+> **StrataMod** is a maintenance fork of official Strata v0.2.4 (Qwen engine 0.1.48). It keeps opt-in Windows HIP image support, multiple-image processing and an optional local Windows ownership/calibration adapter. See [scope, validation and upstream overlap](docs/STRATAMOD.md).
+> Private models, SDKs, images, installation receipts and diagnostic records are not distributed. The official setup instructions below remain the general installation entry.
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="apps/host/public/brand/strata-lockup-dark.svg">

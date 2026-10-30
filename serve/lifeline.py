@@ -270,7 +270,7 @@ def _own_group(then=None):
     return run
 
 
-def popen(args, role: str = "engine", **kw) -> subprocess.Popen:
+def popen(args, role: str = "engine", *, on_spawn=None, **kw) -> subprocess.Popen:
     """``subprocess.Popen(args, **kw)`` for a process that must not outlive us.
 
     An engine or image encoder is also taken out of the terminal's reach (its own process group on POSIX, a new
@@ -279,7 +279,10 @@ def popen(args, role: str = "engine", **kw) -> subprocess.Popen:
     finished or cancelled. What ties the engine's life to ours is the guarantee below, not the shared terminal.
 
     It also leaves a record (strata_control/procs.py) so that, if everything here dies anyway, the next start can
-    find this process by PID, start time and command line and end it."""
+    find this process by PID, start time and command line and end it.
+
+    An optional owner gets the original Popen before fallible containment or
+    bookkeeping, so it can retain and reap a child when those steps fail."""
     how = mechanism()
     isolate = role in ISOLATED_ROLES
     if isolate and os.name == "nt":
@@ -290,8 +293,12 @@ def popen(args, role: str = "engine", **kw) -> subprocess.Popen:
         parent, then = os.getpid(), kw.pop("preexec_fn", None)
         kw["preexec_fn"] = _die_with_parent(parent, then)
         child = _the_anchor().call(lambda: subprocess.Popen(args, **kw))
+        if on_spawn is not None:
+            on_spawn(child)
     else:
         child = subprocess.Popen(args, **kw)
+        if on_spawn is not None:
+            on_spawn(child)
         if how == "job":
             winjob.contain(child)
         else:

@@ -63,6 +63,8 @@ class StartError(unittest.TestCase):
         proc = SimpleNamespace(stdin=io.StringIO(), stdout=io.StringIO(""), kill=lambda: None, wait=lambda timeout=None: 0,
                                poll=lambda: 7, returncode=7)
         v = server.Vision.__new__(server.Vision)
+        v.proc = None  # Mod retains an explicit owner until exit is proved
+        v.cleanup_pending = False
         v.spawn = (["strata-vision"], None, None)
         v.dir = Path(tempfile.gettempdir())
         with mock.patch.object(server, "popen", lambda *a, **k: proc):

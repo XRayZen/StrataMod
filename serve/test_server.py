@@ -6080,6 +6080,9 @@ class LazyVision(unittest.TestCase):
             class P:
                 stdin, stdout, killed = io.StringIO(), io.StringIO("oops" + chr(10)), False
 
+                def poll(self):
+                    return 0 if P.killed else None
+
                 def kill(self):
                     P.killed = True
 
@@ -6108,6 +6111,9 @@ class VisionShutdown(unittest.TestCase):
 
             class Proc:
                 stdin = io.StringIO()
+
+                def poll(self):
+                    return None
 
                 def wait(self, timeout=None):
                     return 0
@@ -6274,7 +6280,8 @@ class UntimedReads(unittest.TestCase):
         v = server.Vision.__new__(server.Vision)
         v.dir, v.lock, v.cache = Path(tempfile.mkdtemp(prefix="strata-vision-test-")), threading.Lock(), {}
         v.stopped = False
-        v.proc = SimpleNamespace(stdin=io.StringIO(), stdout=silent, kill=silent.kill, poll=lambda: 1 if silent.killed else None)
+        v.proc = SimpleNamespace(stdin=io.StringIO(), stdout=silent, kill=silent.kill,
+                                 wait=lambda timeout=None: 0, poll=lambda: 1 if silent.killed else None)
         try:
             with mock.patch.object(server, "VISION_ENCODE_S", 0.3), \
                     mock.patch.object(server.Vision, "load", return_value=b""),                     mock.patch.object(server.Vision, "normalize", return_value=b"png"):
@@ -6290,9 +6297,11 @@ class UntimedReads(unittest.TestCase):
     def test_vision_ready_read_times_out(self):
         import serve.server as server
         silent = self.Silent()
-        proc = SimpleNamespace(stdin=io.StringIO(), stdout=silent, kill=silent.kill, poll=lambda: None)
+        proc = SimpleNamespace(stdin=io.StringIO(), stdout=silent, kill=silent.kill,
+                               wait=lambda timeout=None: 0, poll=lambda: None)
         v = server.Vision.__new__(server.Vision)
         v.spawn = (["strata-vision"], None, None)
+        v.proc = None
         v.dir = Path(tempfile.mkdtemp(prefix="strata-vision-test-"))
         try:
             with mock.patch.object(server, "popen", lambda *a, **k: proc), mock.patch.object(server, "VISION_READY_S", 0.3):

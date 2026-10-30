@@ -221,7 +221,7 @@ class Session:
             self.rate()
 
 
-def run(cfg: dict, say=print, start_engine=None, *, progress=None, cancel_event=None) -> dict:
+def run(cfg: dict, say=print, start_engine=None, close_engine=None, *, progress=None, cancel_event=None) -> dict:
     """Measure on the engine `cfg` describes; returns {"settings": {flag: value}, "report": {...}}.
     `start_engine(args)` returns a started engine (serve.server.StrataEngine or a stand-in in tests)."""
     if start_engine is None:
@@ -240,11 +240,12 @@ def run(cfg: dict, say=print, start_engine=None, *, progress=None, cancel_event=
     tok = ST.Tokenizer(toks, (tpath / "merges.txt").read_text(encoding="utf-8").split("\n"),
                        json.loads((tpath / "token_type.json").read_text()))
     ids_list = [chat_ids(tok, p) for p in PROMPTS]
-    if progress is None and cancel_event is None:
-        return measure(engine_args(cfg), ids_list, start_engine, say, host_worker_extras(), doc_prompt(tok),
-                       hip=cfg.get("backend") == "hip")
-    return measure(engine_args(cfg), ids_list, start_engine, say, host_worker_extras(), doc_prompt(tok),
-                   hip=cfg.get("backend") == "hip", progress=progress, cancel_event=cancel_event)
+    options = {"hip": cfg.get("backend") == "hip"}
+    if close_engine is not None:
+        options["close_engine"] = close_engine
+    if progress is not None or cancel_event is not None:
+        options.update(progress=progress, cancel_event=cancel_event)
+    return measure(engine_args(cfg), ids_list, start_engine, say, host_worker_extras(), doc_prompt(tok), **options)
 
 
 def engine_args(cfg: dict) -> list[str]:
@@ -301,7 +302,8 @@ def sweep(s, values: list, base_tune: dict, key: str, label: str, say,
 
 
 def measure(base_args: list[str], ids_list, start_engine, say=print, extra_workers=(), long_prompt=None, hip: bool = False,
-            *, progress=None, cancel_event=None) -> dict:
+            close_engine=None, *, progress=None, cancel_event=None) -> dict:
+    finish = close if close_engine is None else close_engine
     t0 = time.time()
     report: dict = {}
     _check_cancel(cancel_event)
@@ -353,7 +355,7 @@ def measure(base_args: list[str], ids_list, start_engine, say=print, extra_worke
                       min_p_sweep={str(k): v for k, v in by_minp.items()},
                       confirm={f"{k[0]}/{k[1]}": v for k, v in confirm.items()})
     finally:
-        close(eng)
+        finish(eng)
     settings = {}
     if pipe:
         settings["--prefill-pipe"] = str(int(pipe))
@@ -372,7 +374,8 @@ def measure(base_args: list[str], ids_list, start_engine, say=print, extra_worke
             _check_cancel(cancel_event)
             say(f"  Measuring with {w} CPU workers (restarts the engine) ...")
             measure_candidate(start_engine, with_arg(tuned, "--pool-workers", None if w == d_workers else str(w)),
-                              f"{w} workers", say, report, by_workers, w, ids_list, cancel_event=cancel_event)
+                              f"{w} workers", say, report, by_workers, w, ids_list,
+                              cancel_event=cancel_event, close_engine=finish)
             _progress(progress, "cpu_workers", index, len(workers))
         report["workers"] = {str(k): v for k, v in by_workers.items()}
         w_best = pick(by_workers, d_workers) if by_workers else d_workers
@@ -397,7 +400,7 @@ def measure(base_args: list[str], ids_list, start_engine, say=print, extra_worke
             args = with_arg(args, flag, v)
         say(f"  Measuring the expert tier {'(the engine default)' if cand is None else 'every ' + cand[0] + ', ' + cand[1] + ' swaps, decay ' + cand[2]} (restarts the engine) ...")
         measure_candidate(start_engine, args, "the expert tier " + key, say, report, by_adapt, key, ids_list,
-                          TIER_MAX_NEW, cancel_event=cancel_event)
+                          TIER_MAX_NEW, cancel_event=cancel_event, close_engine=finish)
         _progress(progress, "expert_tier", index, len(ADAPT_CANDIDATES))
     a_best = pick(by_adapt, "default") if by_adapt else "default"
     report["adapt"] = by_adapt
@@ -424,7 +427,7 @@ def measure(base_args: list[str], ids_list, start_engine, say=print, extra_worke
             say(f"  Measuring the shared expert {'on its own stream' if v == '1' else 'on the main stream (the AMD default)'}"
                 " (restarts the engine) ...")
             measure_candidate(lambda a: start_engine(a, {SH_STREAM: v}), tuned, f"{SH_STREAM}={v}", say, report,
-                              by_fork, v, ids_list, cancel_event=cancel_event)
+                              by_fork, v, ids_list, cancel_event=cancel_event, close_engine=finish)
         report["sh_stream"] = by_fork
         if pick(by_fork, "0") == "1":
             env[SH_STREAM] = "1"
@@ -461,7 +464,7 @@ def restart(start_engine, args, what, say, report):
 
 
 def measure_candidate(start_engine, args, what, say, report, by: dict, key, ids_list, max_new: int | None = None,
-                      cancel_event=None):
+                      cancel_event=None, close_engine=None):
     """One restart-and-measure candidate (#1337): a start that fails and an engine that exits mid-measurement are
     both that candidate losing - `by[key]` gets its two rates, or report["failed_starts"] its reason.  Everything
     measured earlier and the other candidates survive.  An operator cancel is not a candidate death: it raises."""
@@ -481,7 +484,7 @@ def measure_candidate(start_engine, args, what, say, report, by: dict, key, ids_
             "the earlier results are kept")
         report.setdefault("failed_starts", {})[what] = why
     finally:
-        close(e)
+        (close if close_engine is None else close_engine)(e)
 
 
 def close(eng):

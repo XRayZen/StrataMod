@@ -219,7 +219,7 @@ class MonitorBundleTests(unittest.TestCase):
             if os.name == "posix":
                 self.assertEqual(target.stat().st_mode & 0o077, 0)
                 self.assertEqual((target / bundle.name).stat().st_mode & 0o077, 0)
-            portable = subprocess.run([sys.executable, "-I", str(target / bundle.name), "logs", "--help"],
+            portable = subprocess.run([sys.executable, "-I", "-X", "utf8", str(target / bundle.name), "logs", "--help"],
                                       cwd=directory, capture_output=True, text=True, check=True)
             self.assertIn("--follow", portable.stdout)
             extra = target / "user-notes.txt"
@@ -257,15 +257,26 @@ class MonitorBundleTests(unittest.TestCase):
             self.assertFalse(target.exists())
             self.assertFalse(list(root.glob(".strata-monitor-install-*")))
 
+    def test_actual_symlink_input_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);bundle=root/'monitor.pyz';build(bundle)
+            linked=root/'linked.pyz'
+            try:
+                linked.symlink_to(bundle)
+            except OSError as error:
+                if getattr(error,'winerror',None)==1314:
+                    self.skipTest('Windows symlink privilege unavailable; actual link not tested')
+                raise
+            with self.assertRaisesRegex(ValueError,'bounded regular'):verify(linked)
+
     def test_bundle_verification_rejects_large_or_linked_input(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             bundle = root / "monitor.pyz"
             build(bundle)
-            linked = root / "linked.pyz"
-            linked.symlink_to(bundle)
-            with self.assertRaisesRegex(ValueError, "bounded regular"):
-                verify(linked)
+            with mock.patch.object(BUILDER_MODULE.stat, "S_ISREG", return_value=False):
+                with self.assertRaisesRegex(ValueError, "bounded regular"):
+                    verify(bundle)
             with bundle.open("ab") as stream:
                 stream.write(b"x" * (1024 * 1024))
             with self.assertRaisesRegex(ValueError, "bounded regular"):
